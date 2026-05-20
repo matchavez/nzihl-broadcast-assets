@@ -1,7 +1,7 @@
-name: Update NZIHL Standings Graphic
+name: Update Standings Graphics
 
-# Runs nightly at 14:00 UTC, which is 02:00 NZST (New Zealand winter, the
-# hockey season).  NZ shifts to NZDT (UTC+13) from late September to early
+# Runs nightly at 14:00 UTC, which is 02:00 NZST (New Zealand winter — the
+# hockey season). NZ shifts to NZDT (UTC+13) from late September to early
 # April, so during the off-season this fires at 03:00 local — fine, since
 # no games are being played then.
 on:
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:        # allow manual runs from the Actions tab
 
 permissions:
-  contents: write           # required to commit the updated PNG back
+  contents: write           # required to commit the updated PNGs back
 
 jobs:
   build:
@@ -30,17 +30,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Render standings graphic
+      - name: Render standings graphics
         run: python build_standings.py
 
-      - name: Commit updated PNG
+      - name: Commit updated PNGs
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- NZIHL_Standings.png; then
-            echo "No change in standings graphic — nothing to commit."
+          if git diff --quiet -- NZIHL_Standings.png NZWIHL_Standings.png; then
+            echo "No change in standings graphics — nothing to commit."
             exit 0
           fi
-          git add NZIHL_Standings.png
-          git commit -m "Update NZIHL standings ($(date -u +'%Y-%m-%d %H:%M UTC'))"
+          git add NZIHL_Standings.png NZWIHL_Standings.png
+          git commit -m "Update NZIHL & NZWIHL standings ($(date -u +'%Y-%m-%d %H:%M UTC'))"
           git push
