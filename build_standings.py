@@ -105,9 +105,9 @@ NZWIHL = LeagueConfig(
     },
     fallback=[
         {"name": "Auckland Steel",        "logo": "Auckland-Steel-White.png",
-         "W": 2, "OTW": 0, "OTL": 0, "L": 0, "GF": 10, "GA": 2,  "PTS": 6, "GP": 2},
+         "W": 3, "OTW": 0, "OTL": 0, "L": 0, "GF": 15, "GA": 2,  "PTS": 9, "GP": 3},
         {"name": "Dunedin Thunder Women", "logo": "thunder-women-white.png",
-         "W": 1, "OTW": 0, "OTL": 0, "L": 1, "GF": 10, "GA": 6,  "PTS": 3, "GP": 2},
+         "W": 1, "OTW": 0, "OTL": 0, "L": 2, "GF": 10, "GA": 11,  "PTS": 3, "GP": 3},
         {"name": "Canterbury Inferno",    "logo": "Inferno-White.png",
          "W": 1, "OTW": 0, "OTL": 0, "L": 1, "GF": 6,  "GA": 10, "PTS": 3, "GP": 2},
         {"name": "Wakatipu Wild",         "logo": "Wakatipu-wild-white.png",
