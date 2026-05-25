@@ -460,21 +460,21 @@ def render(cfg: LeagueConfig, teams: List[Dict]) -> Image.Image:
                 val = team["GD"]
                 txt = f"+{val}" if val > 0 else (str(val) if val < 0 else "0")
                 color = GREEN if val > 0 else (RED_NEG if val < 0 else DIM)
-                _centered(draw, cx, cy, txt, font(28, "semibold"), color)
+                _centered(draw, cx, cy, txt, font(36, "semibold"), color)
             elif col == "PPG":
                 _centered(draw, cx, cy, f"{team['PPG']:.2f}",
-                          font(28, "semibold"), FG)
+                          font(36, "semibold"), FG)
             elif col == "Pts":
                 _centered(draw, cx, cy, str(team["PTS"]),
-                          font(42, "black"), ACCENT)
+                          font(54, "black"), ACCENT)
             else:
                 v = team[col]
                 if col == "L":
                     color = DIM
-                    fnt = font(32, "semibold")
+                    fnt = font(42, "semibold")
                 else:
                     color = FG
-                    fnt = font(32, "bold")
+                    fnt = font(42, "bold")
                 _centered(draw, cx, cy, str(v), fnt, color)
 
     # --- Footer ------------------------------------------------------------
