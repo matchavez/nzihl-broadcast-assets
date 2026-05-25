@@ -15,7 +15,7 @@ import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import requests
 from bs4 import BeautifulSoup
@@ -50,9 +50,37 @@ class LeagueConfig:
     url: str                        # standings page
     league_logo: str                # filename inside assets/league/
     teams: Dict[str, Dict]          # normalised-key -> {name, logo}
-    fallback: List[Dict]            # static snapshot used if scrape fails
+    fallback: List[Dict]            # static snapshot — only used when use_fallback=True
+    use_fallback: bool              # opt-in: set True manually after editing `fallback`,
+                                    # otherwise scraper failure skips the league (no PNG
+                                    # overwrite) and the workflow step exits non-zero
     output_file: str                # output PNG filename
 
+
+# ---------------------------------------------------------------------------
+# MANUAL FALLBACK — how the `use_fallback` flag works
+# ---------------------------------------------------------------------------
+# Each league below has a `use_fallback` flag that should normally be False.
+#
+#   use_fallback=False  (default / "no")
+#       If the live scrape succeeds, the rendered PNG uses live data.
+#       If the live scrape FAILS, the league is skipped: the existing PNG
+#       on disk is left untouched and main() returns a non-zero exit code,
+#       which makes the GitHub Actions step fail loudly (email notification)
+#       instead of quietly publishing stale numbers.
+#
+#   use_fallback=True   ("yes" — manual override)
+#       Only flip this on when the live scrape is broken AND you have
+#       hand-edited the `fallback=[...]` block below to reflect current
+#       stats. On the next workflow run, if the scrape fails, the renderer
+#       will draw the PNG from your hand-edited fallback.
+#       IMPORTANT: flip it back to False once the live scraper is healthy,
+#       otherwise stale fallback data can silently resurface the next time
+#       the scraper breaks.
+#
+# Note: a successful live scrape always wins. The flag only changes what
+# happens on scrape failure.
+# ---------------------------------------------------------------------------
 
 NZIHL = LeagueConfig(
     code="NZIHL",
@@ -85,6 +113,9 @@ NZIHL = LeagueConfig(
         {"name": "Canterbury Red Devils",         "logo": "Red Devils 2000x2000r.png",
          "W": 0, "OTW": 0, "OTL": 1, "L": 4, "GF": 15, "GA": 27, "PTS": 1, "GP": 5},
     ],
+    # Flip to True ONLY after updating the fallback rows above. See the
+    # MANUAL FALLBACK header comment for the full procedure.
+    use_fallback=False,
     output_file="NZIHL_Standings.png",
 )
 
@@ -113,6 +144,9 @@ NZWIHL = LeagueConfig(
         {"name": "Wakatipu Wild",         "logo": "Wakatipu-wild-white.png",
          "W": 0, "OTW": 0, "OTL": 0, "L": 2, "GF": 2,  "GA": 10, "PTS": 0, "GP": 2},
     ],
+    # Flip to True ONLY after updating the fallback rows above. See the
+    # MANUAL FALLBACK header comment for the full procedure.
+    use_fallback=False,
     output_file="NZWIHL_Standings.png",
 )
 
@@ -124,8 +158,14 @@ def _normalise(name: str) -> str:
     return re.sub(r"[A-Z]{2,3}$", "", name).strip().lower()
 
 
-def fetch_standings(cfg: LeagueConfig) -> List[Dict]:
-    """Scrape the standings table; fall back to a static snapshot on error."""
+def fetch_standings(cfg: LeagueConfig) -> Optional[List[Dict]]:
+    """Scrape the standings table.
+
+    Returns the scraped rows on success. On failure, returns the static
+    fallback ONLY when ``cfg.use_fallback`` is True; otherwise returns None
+    so the caller can skip the league (preserving the previously-committed
+    PNG) and surface a non-zero exit code from main().
+    """
     try:
         base_url = "/".join(cfg.url.split("/")[:3])
         session = requests.Session()
@@ -133,7 +173,7 @@ def fetch_standings(cfg: LeagueConfig) -> List[Dict]:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
             "Accept-Language": "en-NZ,en;q=0.9",
-            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Encoding": "gzip, deflate",
             "Referer": base_url + "/",
             "Connection": "keep-alive",
             "Upgrade-Insecure-Requests": "1",
@@ -142,13 +182,23 @@ def fetch_standings(cfg: LeagueConfig) -> List[Dict]:
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
 
+        # Prefer the detailed standings table (includes GF/GA) over the
+        # summary table the site renders first.
         target = None
         for table in soup.find_all("table"):
             headers = [c.get_text(strip=True).upper()
-                       for c in table.find_all(["th", "td"])][:20]
-            if {"OTW", "OTL", "PTS"}.issubset(set(headers)):
+                       for c in table.find_all(["th", "td"])][:25]
+            hdr_set = set(headers)
+            if {"OTW", "OTL", "PTS", "GF", "GA"}.issubset(hdr_set):
                 target = table
                 break
+        if target is None:
+            for table in soup.find_all("table"):
+                headers = [c.get_text(strip=True).upper()
+                           for c in table.find_all(["th", "td"])][:20]
+                if {"OTW", "OTL", "PTS"}.issubset(set(headers)):
+                    target = table
+                    break
         if target is None:
             raise RuntimeError("No standings table found")
 
@@ -188,9 +238,13 @@ def fetch_standings(cfg: LeagueConfig) -> List[Dict]:
         return teams
 
     except Exception as exc:                                # noqa: BLE001
-        print(f"[warn] {cfg.code} live scrape failed ({exc!r}); using fallback",
-              file=sys.stderr)
-        return [dict(t) for t in cfg.fallback]
+        if cfg.use_fallback:
+            print(f"[warn] {cfg.code} live scrape failed ({exc!r}); "
+                  f"using manually-enabled fallback", file=sys.stderr)
+            return [dict(t) for t in cfg.fallback]
+        print(f"[error] {cfg.code} live scrape failed ({exc!r}); "
+              f"use_fallback=False, skipping render", file=sys.stderr)
+        return None
 
 
 # --- Render ----------------------------------------------------------------
@@ -436,14 +490,23 @@ def render(cfg: LeagueConfig, teams: List[Dict]) -> Image.Image:
 
 
 def main() -> int:
+    failed: List[str] = []
     for cfg in (NZIHL, NZWIHL):
         teams = fetch_standings(cfg)
+        if teams is None:
+            failed.append(cfg.code)
+            continue
         img = render(cfg, teams)
         out = HERE / cfg.output_file
         img.save(out, "PNG", optimize=True)
         print(f"Wrote {out}  ({img.size[0]}x{img.size[1]})")
         for i, t in enumerate(sorted(teams, key=lambda x: (-x["PPG"], -x["PTS"])), 1):
             print(f"  {i}. {t['name']:38s}  PPG={t['PPG']:.2f}  PTS={t['PTS']}  GP={t['GP']}")
+    if failed:
+        print(f"[error] scrape failed for: {', '.join(failed)} "
+              f"(set use_fallback=True in build_standings.py to render "
+              f"from the static snapshot)", file=sys.stderr)
+        return 1
     return 0
 
 
