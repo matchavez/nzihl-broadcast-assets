@@ -441,7 +441,8 @@ def render(cfg: LeagueConfig, teams: List[Dict]) -> Image.Image:
             (pill_cx - PILL_R, cy - PILL_R, pill_cx + PILL_R, cy + PILL_R),
             radius=10, fill=PILL_BG,
         )
-        _centered(draw, pill_cx, cy, str(pos), font(26, "bold"), FG)
+        pill_fg = DIM if (cfg.code == "NZIHL" and pos == 5) else FG
+        _centered(draw, pill_cx, cy, str(pos), font(26, "bold"), pill_fg)
 
         logo_cx = LEFT_EDGE + POS_W + LOGO_W // 2
         _paste_logo(img, LOGOS_DIR / team["logo"], logo_cx, cy, 100)
