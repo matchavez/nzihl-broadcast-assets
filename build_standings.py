@@ -103,15 +103,15 @@ NZIHL = LeagueConfig(
     },
     fallback=[
         {"name": "SkyCity Stampede",              "logo": "Skycity Stampede 2000x2000.png",
-         "W": 2, "OTW": 1, "OTL": 0, "L": 1, "GF": 19, "GA": 16, "PTS": 8, "GP": 4},
+         "W": 1, "OTW": 1, "OTL": 1, "L": 1, "GF": 1, "GA": 1, "PTS": 1, "GP": 1},
         {"name": "Pure NZ Admirals", "logo": "Pure-NZ-Admirals-2000x2000.png",
-         "W": 3, "OTW": 0, "OTL": 0, "L": 1, "GF": 19, "GA": 13,  "PTS": 9, "GP": 4},
+         "W": 1, "OTW": 1, "OTL": 1, "L": 1, "GF": 1, "GA": 1,  "PTS": 1, "GP": 1},
         {"name": "Dunedin Thunder",               "logo": "Dunedin_Thunder.png",
-         "W": 3, "OTW": 0, "OTL": 0, "L": 3, "GF": 28, "GA": 24, "PTS": 9, "GP": 6},
+         "W": 1, "OTW": 1, "OTL": 1, "L": 1, "GF": 1, "GA": 1, "PTS": 1, "GP": 1},
         {"name": "Botany Swarm",                  "logo": "Botany Swarm 2000x2000.png",
-         "W": 2, "OTW": 0, "OTL": 0, "L": 1, "GF": 13,  "GA": 14, "PTS": 6, "GP": 3},
+         "W": 1, "OTW": 1, "OTL": 1, "L": 1, "GF": 1,  "GA": 1, "PTS": 1, "GP": 1},
         {"name": "Canterbury Red Devils",         "logo": "Red Devils 2000x2000r.png",
-         "W": 0, "OTW": 0, "OTL": 1, "L": 4, "GF": 15, "GA": 27, "PTS": 1, "GP": 5},
+         "W": 1, "OTW": 1, "OTL": 1, "L": 1, "GF": 1, "GA": 1, "PTS": 1, "GP": 1},
     ],
     # Flip to True ONLY after updating the fallback rows above. See the
     # MANUAL FALLBACK header comment for the full procedure.
@@ -136,13 +136,13 @@ NZWIHL = LeagueConfig(
     },
     fallback=[
         {"name": "Auckland Steel",        "logo": "Auckland-Steel-White.png",
-         "W": 3, "OTW": 0, "OTL": 0, "L": 0, "GF": 15, "GA": 2,  "PTS": 9, "GP": 3},
+         "W": 1, "OTW": 1, "OTL": 1, "L": 1, "GF": 1, "GA": 1,  "PTS": 1, "GP": 1},
         {"name": "Dunedin Thunder Women", "logo": "thunder-women-white.png",
-         "W": 1, "OTW": 0, "OTL": 0, "L": 2, "GF": 10, "GA": 11,  "PTS": 3, "GP": 3},
+         "W": 1, "OTW": 1, "OTL": 1, "L": 1, "GF": 1, "GA": 1,  "PTS": 1, "GP": 1},
         {"name": "Canterbury Inferno",    "logo": "Inferno-White.png",
-         "W": 1, "OTW": 0, "OTL": 0, "L": 1, "GF": 6,  "GA": 10, "PTS": 3, "GP": 2},
+         "W": 1, "OTW": 1, "OTL": 1, "L": 1, "GF": 1,  "GA": 1, "PTS": 1, "GP": 1},
         {"name": "Wakatipu Wild",         "logo": "Wakatipu-wild-white.png",
-         "W": 0, "OTW": 0, "OTL": 0, "L": 2, "GF": 2,  "GA": 10, "PTS": 0, "GP": 2},
+         "W": 1, "OTW": 1, "OTL": 1, "L": 1, "GF": 1,  "GA": 1, "PTS": 1, "GP": 1},
     ],
     # Flip to True ONLY after updating the fallback rows above. See the
     # MANUAL FALLBACK header comment for the full procedure.
@@ -325,19 +325,10 @@ def render(cfg: LeagueConfig, teams: List[Dict]) -> Image.Image:
         (0, 0, PANEL_W, PANEL_H), radius=PANEL_R, fill=255)
     panel_img.paste(grad, (0, 0), mask)
 
-    # Shadow trimmed to inside the transparent margin
-    shadow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    sd = ImageDraw.Draw(shadow)
-    sd.rounded_rectangle(
-        (PANEL[0] + 4, PANEL[1] + 10, PANEL[2] + 4, PANEL[3] + 10),
-        radius=PANEL_R, fill=(0, 0, 0, 100),
-    )
-    shadow = shadow.filter(ImageFilter.GaussianBlur(14))
-    trim = Image.new("L", (W, H), 0)
-    ImageDraw.Draw(trim).rectangle(
-        (MARGIN, MARGIN, W - MARGIN, H - MARGIN), fill=255)
-    shadow = Image.composite(shadow, Image.new("RGBA", (W, H), (0, 0, 0, 0)), trim)
-    img.alpha_composite(shadow)
+    # No drop shadow: a soft blurred shadow leaves low-alpha black pixels in
+    # the rounded-corner notches, which composite to a grey halo over light
+    # video. Keeping the panel edge crisp guarantees clean transparent corners
+    # for broadcast keying over any background.
     img.alpha_composite(panel_img, dest=(MARGIN, MARGIN))
 
     draw = ImageDraw.Draw(img, "RGBA")
