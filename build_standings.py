@@ -92,8 +92,8 @@ NZIHL = LeagueConfig(
                                   "logo": "Skycity Stampede 2000x2000.png"},
         # Single canonical key for the Admirals (matches the team-code-stripped
         # form that nzihl.com currently displays, "Pure NZ AdmiralsWAA").
-        "pure nz admirals":      {"name": "PureNZ West Auckland Admirals",
-                                  "logo": "West Auckland Admirals 2000x2000.png"},
+        "pure nz admirals":      {"name": "Pure NZ Admirals",
+                                  "logo": "Pure-NZ-Admirals-2000x2000.png"},
         "dunedin thunder":       {"name": "Dunedin Thunder",
                                   "logo": "Dunedin_Thunder.png"},
         "botany swarm":          {"name": "Botany Swarm",
@@ -104,7 +104,7 @@ NZIHL = LeagueConfig(
     fallback=[
         {"name": "SkyCity Stampede",              "logo": "Skycity Stampede 2000x2000.png",
          "W": 2, "OTW": 1, "OTL": 0, "L": 1, "GF": 19, "GA": 16, "PTS": 8, "GP": 4},
-        {"name": "PureNZ West Auckland Admirals", "logo": "West Auckland Admirals 2000x2000.png",
+        {"name": "Pure NZ Admirals", "logo": "Pure-NZ-Admirals-2000x2000.png",
          "W": 3, "OTW": 0, "OTL": 0, "L": 1, "GF": 19, "GA": 13,  "PTS": 9, "GP": 4},
         {"name": "Dunedin Thunder",               "logo": "Dunedin_Thunder.png",
          "W": 3, "OTW": 0, "OTL": 0, "L": 3, "GF": 28, "GA": 24, "PTS": 9, "GP": 6},
