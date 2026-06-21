@@ -240,8 +240,11 @@ def fetch_standings(cfg: LeagueConfig) -> Optional[List[Dict]]:
     except Exception as exc:                                # noqa: BLE001
         if cfg.use_fallback:
             print(f"[warn] {cfg.code} live scrape failed ({exc!r}); "
-                  f"using manually-enabled fallback", file=sys.stderr)
-            return [dict(t) for t in cfg.fallback]
+                  f"using manually-enabled fallback (sorted by Points)",
+                  file=sys.stderr)
+            # No website order to preserve here, so fall back to Points (desc).
+            return sorted((dict(t) for t in cfg.fallback),
+                          key=lambda t: -t["PTS"])
         print(f"[error] {cfg.code} live scrape failed ({exc!r}); "
               f"use_fallback=False, skipping render", file=sys.stderr)
         return None
@@ -305,7 +308,9 @@ def render(cfg: LeagueConfig, teams: List[Dict]) -> Image.Image:
     for t in teams:
         t["GD"]  = t["GF"] - t["GA"]
         t["PPG"] = t["PTS"] / t["GP"] if t["GP"] else 0.0
-    teams.sort(key=lambda t: (-t["PPG"], -t["PTS"], -t["GD"], t["GP"], t["name"]))
+    # Row order is decided upstream in fetch_standings(): a live scrape keeps
+    # the league website's own standings order; the static fallback is sorted
+    # by Points (desc). No PPG-based re-sort here (Mat's 2026-06-22 change).
 
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
 
@@ -339,8 +344,8 @@ def render(cfg: LeagueConfig, teams: List[Dict]) -> Image.Image:
     RIGHT_EDGE = PANEL[2] - INNER_PAD
 
     TOP_STRIP_H = 130
-    RED_BAR_H   = TOP_STRIP_H // 2
-    COL_HDR_H   = 56
+    RED_BAR_H   = TOP_STRIP_H // 4   # was //2 — red bar height halved (Mat 2026-06-22)
+    COL_HDR_H   = 66                 # was 56 — column-header row a little taller
     FOOTER_H    = 52
 
     ROWS_TOP = PY + TOP_STRIP_H + RED_BAR_H + COL_HDR_H
@@ -397,9 +402,9 @@ def render(cfg: LeagueConfig, teams: List[Dict]) -> Image.Image:
     img.paste(red_strip, (PANEL[0] + 1, RED_Y0))
     draw = ImageDraw.Draw(img, "RGBA")
 
-    _centered(draw, (PANEL[0] + PANEL[2]) // 2, RED_Y0 + RED_BAR_H // 2,
-              "Standings Ordered by Points Per Game",
-              font(20, "bold"), (255, 255, 255))
+    # Red bar kept as a design divider, but the "Ordered by Points Per Game"
+    # caption was removed (Mat's 2026-06-22 change) — standings now follow the
+    # league website order, so the old caption no longer applies.
 
     # --- Column header strip ----------------------------------------------
     CH_Y = RED_Y0 + RED_BAR_H
@@ -411,7 +416,8 @@ def render(cfg: LeagueConfig, teams: List[Dict]) -> Image.Image:
         cx = NUM_START_X + i * NUM_COL_W + NUM_COL_W // 2
         is_pts = (col == "Pts")
         color = ACCENT if is_pts else SUB
-        fnt = font(24, "black") if is_pts else font(22, "semibold")
+        # Header font sizes bumped ~15% (Mat 2026-06-22): 24->28, 22->25
+        fnt = font(28, "black") if is_pts else font(25, "semibold")
         _centered(draw, cx, ch_cy, col.upper(), fnt, color)
 
     # --- Team rows ---------------------------------------------------------
@@ -492,8 +498,8 @@ def main() -> int:
         out = HERE / cfg.output_file
         img.save(out, "PNG", optimize=True)
         print(f"Wrote {out}  ({img.size[0]}x{img.size[1]})")
-        for i, t in enumerate(sorted(teams, key=lambda x: (-x["PPG"], -x["PTS"])), 1):
-            print(f"  {i}. {t['name']:38s}  PPG={t['PPG']:.2f}  PTS={t['PTS']}  GP={t['GP']}")
+        for i, t in enumerate(teams, 1):
+            print(f"  {i}. {t['name']:38s}  PTS={t['PTS']}  GP={t['GP']}  PPG={t['PPG']:.2f}")
     if failed:
         print(f"[error] scrape failed for: {', '.join(failed)} "
               f"(set use_fallback=True in build_standings.py to render "
