@@ -294,12 +294,25 @@ def _right(d, x, y, text, fnt, fill):
     d.text((x - w - bb[0], y - h / 2 - bb[1]), text, font=fnt, fill=fill)
 
 
-def _paste_logo(canvas, logo_path, cx, cy, size):
+def _paste_logo(canvas, logo_path, cx, cy, target_h, width_cap):
+    """Style-guide logo sizing (2026 guide, "Logo Sizing"): scale by the
+    OPAQUE ARTWORK height -- not the file canvas, whose transparent padding
+    varies team to team -- clamp to a width cap so wide marks don't dominate,
+    then centre the cropped artwork on the anchor. Uniform content-height means
+    every crest reads at the same visual size at every rank."""
     try:
         logo = Image.open(logo_path).convert("RGBA")
     except FileNotFoundError:
         return
-    logo.thumbnail((size, size), Image.LANCZOS)
+    bbox = logo.getbbox()
+    if bbox:
+        logo = logo.crop(bbox)
+    scale = target_h / logo.height
+    if logo.width * scale > width_cap:
+        scale = width_cap / logo.width
+    logo = logo.resize(
+        (max(1, round(logo.width * scale)), max(1, round(logo.height * scale))),
+        Image.LANCZOS)
     canvas.alpha_composite(logo, dest=(
         int(cx - logo.width / 2), int(cy - logo.height / 2)))
 
@@ -339,12 +352,12 @@ def render(cfg: LeagueConfig, teams: List[Dict]) -> Image.Image:
     draw = ImageDraw.Draw(img, "RGBA")
 
     PX, PY = PANEL[0], PANEL[1]
-    INNER_PAD  = 24
+    INNER_PAD  = 48   # more breathing room at both table margins (Mat 2026-06-22)
     LEFT_EDGE  = PX + INNER_PAD
     RIGHT_EDGE = PANEL[2] - INNER_PAD
 
     TOP_STRIP_H = 130
-    RED_BAR_H   = TOP_STRIP_H // 4   # was //2 — red bar height halved (Mat 2026-06-22)
+    RED_BAR_H   = TOP_STRIP_H // 8   # halved again -> //8 (Mat 2026-06-22)
     COL_HDR_H   = 66                 # was 56 — column-header row a little taller
     FOOTER_H    = 52
 
@@ -352,8 +365,12 @@ def render(cfg: LeagueConfig, teams: List[Dict]) -> Image.Image:
     ROWS_BOT = PANEL[3] - FOOTER_H
     ROW_H = (ROWS_BOT - ROWS_TOP) // max(1, len(teams))
 
-    POS_W       = 60
-    LOGO_W      = 110
+    POS_W       = 78    # wider ordinal column -> more room before the logo
+    LOGO_W      = 124   # logo column; width cap below sits inside this with margin
+    # Style-guide logo sizing: uniform opaque-artwork height with a width cap in
+    # the guide's 150:190 (height:width) ratio, scaled to the row.
+    TEAM_LOGO_H    = 90
+    TEAM_LOGO_WCAP = 114
     NUM_COLS    = ["W", "OTW", "OTL", "L", "GD", "Pts", "GP", "PPG"]
     NUM_COL_W   = 116
     NUM_TOTAL   = NUM_COL_W * len(NUM_COLS)
@@ -368,23 +385,30 @@ def render(cfg: LeagueConfig, teams: List[Dict]) -> Image.Image:
     # Constrain league logo by height so wide-aspect marks (NZWIHL is ~4:1)
     # still read at the same visual scale as taller marks (NZIHL is ~1.75:1).
     league_logo = Image.open(LEAGUE_DIR / cfg.league_logo).convert("RGBA")
-    LOGO_TARGET_H = 90
+    # Trim fully-transparent padding baked into the source PNG so every league
+    # mark fills the same visual height regardless of internal whitespace.
+    _lbbox = league_logo.getbbox()
+    if _lbbox:
+        league_logo = league_logo.crop(_lbbox)
+    LOGO_TARGET_H = 84
     scale = LOGO_TARGET_H / league_logo.height
     league_logo = league_logo.resize(
         (int(league_logo.width * scale), LOGO_TARGET_H), Image.LANCZOS)
     img.alpha_composite(league_logo,
                         dest=(LEFT_EDGE, int(TOP_Y_MID - league_logo.height / 2)))
 
-    wordmark_x = LEFT_EDGE + league_logo.width + 22
+    wordmark_x = LEFT_EDGE + league_logo.width + 40
     # Reserve room for the date stamp on the right side
     date_str = dt.date.today().strftime("%A %d %B %Y").upper()
     date_w = draw.textbbox((0, 0), date_str, font=font(24, "bold"))[2]
     wordmark_max_w = RIGHT_EDGE - wordmark_x - date_w - 40
-    wm_fnt = font(40, "bold")
-    if draw.textbbox((0, 0), cfg.full_name, font=wm_fnt)[2] > wordmark_max_w:
-        wm_fnt = font(34, "bold")
-    if draw.textbbox((0, 0), cfg.full_name, font=wm_fnt)[2] > wordmark_max_w:
-        wm_fnt = font(28, "bold")
+    # Pick the largest size that fits (fine 2pt steps so a long league name lands
+    # just under the cap instead of dropping a big increment and undershooting).
+    wm_fnt = font(44, "bold")
+    for _sz in (44, 42, 40, 38, 36):
+        wm_fnt = font(_sz, "bold")
+        if draw.textbbox((0, 0), cfg.full_name, font=wm_fnt)[2] <= wordmark_max_w:
+            break
     _left(draw, wordmark_x, TOP_Y_MID, cfg.full_name, wm_fnt, FG)
     _right(draw, RIGHT_EDGE, TOP_Y_MID, date_str, font(24, "bold"), SUB)
 
@@ -442,14 +466,15 @@ def render(cfg: LeagueConfig, teams: List[Dict]) -> Image.Image:
         _centered(draw, pill_cx, cy, str(pos), font(26, "bold"), pill_fg)
 
         logo_cx = LEFT_EDGE + POS_W + LOGO_W // 2
-        _paste_logo(img, LOGOS_DIR / team["logo"], logo_cx, cy, 100)
+        _paste_logo(img, LOGOS_DIR / team["logo"], logo_cx, cy,
+                    TEAM_LOGO_H, TEAM_LOGO_WCAP)
         draw = ImageDraw.Draw(img, "RGBA")
 
-        name_x = LEFT_EDGE + POS_W + LOGO_W + 14
+        name_x = LEFT_EDGE + POS_W + LOGO_W + 30
         name = team["name"]
-        name_fnt = font(32, "bold")
+        name_fnt = font(36, "bold")
         if draw.textbbox((0, 0), name, font=name_fnt)[2] > TEAM_W - 18:
-            name_fnt = font(28, "bold")
+            name_fnt = font(32, "bold")
         _left(draw, name_x, cy, name, name_fnt, FG)
 
         for i, col in enumerate(NUM_COLS):
