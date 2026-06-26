@@ -62,7 +62,7 @@ TEAMS = {
     band_top=(22,36,60),  band_bot=(8,14,26),  accent=(150,166,188), name=(178,192,210)),
  "inferno":    dict(token="Inferno", lines=["CANTERBURY","INFERNO"], logo="Inferno-White.png", h=178,
     band_top=(104,8,22),  band_bot=(34,2,8),   accent=(255,179,71),  name=(255,186,92)),
- "thunder_w":  dict(token="ThunderWomen", lines=["DUNEDIN","THUNDER"], logo="thunder-women-white.png", h=182, logo_h=164, logo_dy=-5,
+ "thunder_w":  dict(token="ThunderWomen", lines=["DUNEDIN","THUNDER"], logo="thunder-women-white.png", h=182, logo_h=161, logo_dy=-4,
     band_top=(6,52,36),   band_bot=(3,20,14),  accent=(253,173,25),  name=(253,180,42)),
  "wild":       dict(token="Wild", lines=["WAKATIPU","WILD"], logo="Wakatipu-wild-white.png", h=182,
     band_top=(250,200,5), band_bot=(208,148,4), accent=(29,48,86), name=(29,48,86), stroke2=(255,255,255)),
