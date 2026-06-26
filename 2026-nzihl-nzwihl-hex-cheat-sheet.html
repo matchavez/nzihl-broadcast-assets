@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>NZIHL / NZWIHL Hex Cheat Sheet</title>
+<style>
+  :root{ --bg:#0c0c0c; --line:#262626; --muted:#8a8a8a; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; background:var(--bg); color:#fff;
+    font-family:Inter,-apple-system,"SF Pro Text",Segoe UI,Roboto,sans-serif; }
+  body{ padding:6px 8px calc(18px + env(safe-area-inset-bottom));
+    max-width:430px; margin:0 auto; }
+  header{ text-align:center; padding:2px 0 6px; }
+  h1{ font-size:14px; letter-spacing:.06em; margin:0; font-weight:800; }
+  .sub{ font-size:9px; color:var(--muted); margin-top:1px; letter-spacing:.04em; }
+  .league{ font-size:9px; font-weight:800; letter-spacing:.14em; color:var(--muted);
+    margin:9px 2px 3px; text-transform:uppercase; }
+  .team{ display:flex; align-items:stretch; gap:4px; margin-bottom:3px; }
+  .tname{ flex:0 0 78px; font-size:10px; font-weight:700; line-height:1.05;
+    display:flex; align-items:center; padding-right:2px; }
+  .row{ display:flex; gap:3px; flex:1; min-width:0; }
+  .chip{ flex:1; border-radius:6px; padding:4px 5px; cursor:pointer; min-width:0;
+    border:1px solid rgba(255,255,255,.10); transition:transform .08s ease;
+    display:flex; flex-direction:column; justify-content:center; }
+  .chip:active{ transform:scale(.95); }
+  .chip .hx{ font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:11px;
+    font-weight:700; letter-spacing:.01em; }
+  .chip .nm{ font-size:8px; opacity:.78; margin-top:1px; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; }
+  .hint{ text-align:center; font-size:9px; color:var(--muted); margin:6px 0 0; }
+  #toast{ position:fixed; left:50%; bottom:calc(18px + env(safe-area-inset-bottom));
+    transform:translateX(-50%) translateY(20px); background:#fff; color:#000;
+    font-size:12px; font-weight:700; padding:8px 16px; border-radius:20px;
+    opacity:0; pointer-events:none; transition:all .2s ease; z-index:9; }
+  #toast.on{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<header>
+  <h1>NZIHL / NZWIHL HEX</h1>
+  <div class="sub">2026 broadcast colours · tap any chip to copy</div>
+</header>
+<div id="app"></div>
+<p class="hint">Source: 2026 NZIHL & NZWIHL Colour Style Guide</p>
+<div id="toast"></div>
+<script>
+const DATA = [
+ ["NZIHL", [
+   ["Pure NZ Admirals", [["#081D48","Admiral Navy","Primary"],["#F7BE11","Admiral Gold","Secondary"]]],
+   ["Botany Swarm", [["#782738","Swarm Maroon","Primary"],["#F7AF28","Swarm Honey","Secondary"],["#441620","Half-Dark","Scorebug BG"]]],
+   ["SkyCity Stampede", [["#FAC805","Stampede Yellow","Primary"],["#1D3056","Stampede Navy","Secondary"],["#162543","Half-Dark","Scorebug BG"]]],
+   ["Dunedin Thunder", [["#025B3D","Thunder Forest","Primary"],["#FDAD19","Thunder Amber","Secondary"],["#012C1E","Half-Dark","Scorebug BG"]]],
+   ["Auckland Mako", [["#62656A","Mako Steel","Primary"],["#202222","Mako Ink","Secondary"]]],
+   ["Canterbury Red Devils", [["#DC0000","Devil Red","Primary"],["#000000","Devil Black","Secondary"],["#550000","Half-Dark","Scorebug BG"]]],
+ ]],
+ ["NZWIHL", [
+   ["Auckland Steel", [["#1A2A44","Steel Navy","Primary"],["#8A9BB0","Brushed Silver","Secondary"],["#18263E","Half-Dark","Scorebug BG"]]],
+   ["Canterbury Inferno", [["#B00020","Ember Red","Primary"],["#FF6A13","Flame Orange","Secondary"],["#111111","Coal Black","Tertiary"],["#550000","Half-Dark","Scorebug BG"]]],
+   ["Dunedin Thunder Women", [["#025B3D","Thunder Forest","Primary"],["#FDAD19","Thunder Amber","Secondary"],["#012C1E","Half-Dark","Scorebug BG"]]],
+   ["Wakatipu Wild", [["#FAC805","Wild Gold","Primary"],["#1D3056","Wild Navy","Secondary"],["#162543","Half-Dark","Scorebug BG"]]],
+ ]],
+ ["League Marks", [
+   ["League", [["#000000","League Black","Primary"],["#FFFFFF","League White","Reverse"]]],
+ ]],
+];
+
+function textColor(hex){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  const L=(0.2126*r+0.7152*g+0.0722*b)/255;
+  return L>0.55 ? "#000" : "#fff";
+}
+const app=document.getElementById('app');
+DATA.forEach(([league,teams])=>{
+  const lh=document.createElement('div'); lh.className='league'; lh.textContent=league; app.appendChild(lh);
+  teams.forEach(([name,chips])=>{
+    const card=document.createElement('div'); card.className='team';
+    const tn=document.createElement('div'); tn.className='tname'; tn.textContent=name; card.appendChild(tn);
+    const row=document.createElement('div'); row.className='row';
+    chips.forEach(([hex,nm,role])=>{
+      const c=document.createElement('div'); c.className='chip';
+      const tc=textColor(hex);
+      c.style.background=hex; c.style.color=tc;
+      if(tc==="#000") c.style.borderColor="rgba(0,0,0,.18)";
+      c.title=role;
+      c.innerHTML=`<div class="hx">${hex}</div><div class="nm">${nm}</div>`;
+      c.onclick=()=>copy(hex);
+      row.appendChild(c);
+    });
+    card.appendChild(row); app.appendChild(card);
+  });
+});
+const toast=document.getElementById('toast');
+function copy(hex){
+  const done=()=>{ toast.textContent="Copied "+hex; toast.classList.add('on'); clearTimeout(copy._t); copy._t=setTimeout(()=>toast.classList.remove('on'),1100); };
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(hex).then(done).catch(()=>fallback(hex,done)); }
+  else fallback(hex,done);
+}
+function fallback(hex,done){ const t=document.createElement('textarea'); t.value=hex; document.body.appendChild(t); t.select(); try{document.execCommand('copy');}catch(e){} t.remove(); done(); }
+</script>
+</body>
+</html>
