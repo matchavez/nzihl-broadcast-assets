@@ -1,16 +1,16 @@
-# UP NEXT — Matchup Overlays
+# Up Next — Matchup Overlays
 
 Transparent **1920×1080** broadcast overlays for the stream "starting soon" countdown — one for every matchup, both home/away orderings, across NZIHL (men) and NZWIHL (women).
 
 **NZIHL (men)** — full-frame overlays, **three variants** each:
 
-- **`*_HERO.png`** — full 1920×1080 overlay (top *UP NEXT* band + bottom matchup bar).
+- **`*_HERO.png`** — full 1920×1080 overlay (top *Up Next* band + bottom matchup bar).
 - **`*_BottomBar.png`** — just the matchup bar, tightly cropped.
 - **`*_BottomBar_1080frame.png`** — the matchup bar registered inside a full 1080 frame (drop-in alignment).
 
 **NZWIHL (women)** — the women's "stream starting soon" is a **still** with a centred live countdown and social row, so these overlays sit *around* those elements (they never cover the timer or handles). **Two variants** each:
 
-- **`*_LowerThird.png`** — colour-split lower-third strip below the social row (both logos + names + centred *UP NEXT*).
+- **`*_LowerThird.png`** — colour-split lower-third strip below the social row (both logos + names + centred *Up Next*).
 - **`*_LowerThirdWithWings.png`** — the lower third (reading *COMING UP NEXT*) **plus** team-colour wings flanking the clock (logo only in the wings).
 
 Filenames read **`HOME_v_AWAY`** — the **home team is the folder's team** and sits on the **left**.

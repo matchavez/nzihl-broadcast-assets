@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Batch-render NZWIHL still-frame UP NEXT overlays (Lower Third + Lower Third with Wings)
+"""Batch-render NZWIHL still-frame Up Next overlays (Lower Third + Lower Third with Wings)
 for every women's matchup. Transparent 1920x1080 PNGs to drop on the countdown still."""
 import os, glob, itertools, numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter

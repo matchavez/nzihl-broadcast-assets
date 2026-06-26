@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-NZIHL / NZWIHL "UP NEXT" broadcast overlay — TEMPLATE.
-Transparent 1920x1080. Top band: centred UP NEXT. Bottom band: two teams split by a
+NZIHL / NZWIHL "Up Next" broadcast overlay — TEMPLATE.
+Transparent 1920x1080. Top band: centred Up Next. Bottom band: two teams split by a
 diagonal seam that EXACTLY matches the slant of the "I" in the centred league mark.
 
 Configure a matchup with environment variables:

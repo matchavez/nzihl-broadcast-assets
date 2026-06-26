@@ -71,6 +71,6 @@ PNGs so dependent broadcasts never see a stale-or-missing image.
 3. Update the `fallback` list in the same config so the static snapshot
    stays useful.
 
-## UP NEXT matchup overlays
+## Up Next matchup overlays
 
 Per-club broadcast overlays (both home/away, all matchups) live in [`up-next/`](./up-next/) — each club can grab their folder or one-click ZIP.
