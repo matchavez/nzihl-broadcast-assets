@@ -251,12 +251,13 @@ def fetch_standings(cfg: LeagueConfig) -> Optional[List[Dict]]:
 
 
 # --- Render ----------------------------------------------------------------
-W, H = 1920, 1080
-MARGIN = 60
-PANEL = (MARGIN, MARGIN, W - MARGIN, H - MARGIN)
-PANEL_W = PANEL[2] - PANEL[0]
-PANEL_H = PANEL[3] - PANEL[1]
-PANEL_R = 24
+# Two canvases are produced from the SAME layout code (see main()):
+#   * DEFAULT - 1920x1080 RGBA, 60px transparent margin, rounded panel. This is
+#     the broadcast/keying version and must stay byte-for-byte unchanged.
+#   * FLAT    - 1840x1000, no margin, square corners, saved fully opaque (RGB);
+#     a self-contained image broadcasters can post directly.
+DEFAULT_W, DEFAULT_H, DEFAULT_MARGIN, DEFAULT_PANEL_R = 1920, 1080, 60, 24
+FLAT_W, FLAT_H, FLAT_MARGIN, FLAT_PANEL_R = 1840, 1000, 0, 0
 
 BG_TOP    = (12, 14, 18)
 BG_BOT    = (4, 5, 8)
@@ -317,7 +318,19 @@ def _paste_logo(canvas, logo_path, cx, cy, target_h, width_cap):
         int(cx - logo.width / 2), int(cy - logo.height / 2)))
 
 
-def render(cfg: LeagueConfig, teams: List[Dict]) -> Image.Image:
+def render(cfg: LeagueConfig, teams: List[Dict], *,
+           width: int = DEFAULT_W, height: int = DEFAULT_H,
+           margin: int = DEFAULT_MARGIN, panel_r: int = DEFAULT_PANEL_R,
+           ) -> Image.Image:
+    # Layout geometry, derived from the requested canvas. With the DEFAULT
+    # arguments these reproduce the original 1920x1080 constants exactly.
+    W, H = width, height
+    MARGIN = margin
+    PANEL = (MARGIN, MARGIN, W - MARGIN, H - MARGIN)
+    PANEL_W = PANEL[2] - PANEL[0]
+    PANEL_H = PANEL[3] - PANEL[1]
+    PANEL_R = panel_r
+
     for t in teams:
         t["GD"]  = t["GF"] - t["GA"]
         t["PPG"] = t["PTS"] / t["GP"] if t["GP"] else 0.0
@@ -519,10 +532,19 @@ def main() -> int:
         if teams is None:
             failed.append(cfg.code)
             continue
+        # Default broadcast canvas (1920x1080, transparent margin) - unchanged.
         img = render(cfg, teams)
         out = HERE / cfg.output_file
         img.save(out, "PNG", optimize=True)
         print(f"Wrote {out}  ({img.size[0]}x{img.size[1]})")
+
+        # Flat broadcast-fill canvas (1840x1000, no margin/border, fully opaque).
+        flat = render(cfg, teams, width=FLAT_W, height=FLAT_H,
+                      margin=FLAT_MARGIN, panel_r=FLAT_PANEL_R)
+        flat_out = HERE / cfg.output_file.replace("_Standings.png",
+                                                  "_Standings_1840x1000.png")
+        flat.convert("RGB").save(flat_out, "PNG", optimize=True)
+        print(f"Wrote {flat_out}  ({flat.size[0]}x{flat.size[1]}, opaque)")
         for i, t in enumerate(teams, 1):
             print(f"  {i}. {t['name']:38s}  PTS={t['PTS']}  GP={t['GP']}  PPG={t['PPG']:.2f}")
     if failed:
