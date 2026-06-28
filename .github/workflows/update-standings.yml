@@ -39,10 +39,12 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           FILES="NZIHL_Standings.png NZWIHL_Standings.png \
             NZIHL_Standings_1840x1000.png NZWIHL_Standings_1840x1000.png"
-          if git diff --quiet -- $FILES; then
+          # Stage first, then test the index — `git diff --quiet` alone misses
+          # brand-new (untracked) files, e.g. the flat variant on its first run.
+          git add $FILES
+          if git diff --cached --quiet; then
             echo "No change in standings graphics — nothing to commit."
             exit 0
           fi
-          git add $FILES
           git commit -m "Update NZIHL & NZWIHL standings ($(date -u +'%Y-%m-%d %H:%M UTC'))"
           git push
