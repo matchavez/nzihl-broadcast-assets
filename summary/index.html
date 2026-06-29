@@ -87,8 +87,9 @@
 
 <script>
 // ---- config ------------------------------------------------------------
-// CORS shim in front of nzihl. Swap SHIM to your own CORS-passthrough Worker for production.
-const SHIM = u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u);
+// CORS shim in front of nzihl. Paste your deployed Cloudflare Worker URL here (see worker.js).
+const WORKER = "";   // e.g. "https://nzihl-box.YOURNAME.workers.dev"
+const SHIM = u => WORKER ? (WORKER.replace(/\/$/,"") + "?url=" + encodeURIComponent(u)) : null;
 const MANIFESTS = [
   {league:"nzihl",  url:"https://raw.githubusercontent.com/matchavez/nzihl-broadcast-rosters/main/boxscores.json",  clientid:7131, leagueid:35499},
   {league:"nzwihl", url:"https://raw.githubusercontent.com/matchavez/nzwihl-broadcast-rosters/main/boxscores.json", clientid:7132, leagueid:35501},
@@ -292,16 +293,17 @@ async function resolve(){
   return {m:bestM, gid:best.gameid, venue:best.venue||"", leagueName:bestM.league==="nzwihl"?"New Zealand Women's Ice Hockey League":"New Zealand Ice Hockey League"};
 }
 
-let TARGET=null;
+let TARGET=null, renderedOnce=false;
 async function tick(){
   if(!TARGET) return;
+  if(!WORKER){ showMsg("Live data endpoint not set. Deploy worker.js and paste its URL into summary.html (WORKER = …)."); return; }
   try{
     const html=await getText(boxURL(TARGET.m,TARGET.gid));
     const P=parse(html);
     VENUE = TARGET.venue || vis(P.home.teamID).venue || "";
     LEAGUE_NAME = TARGET.leagueName;
-    hideMsg(); render(P); fitWindow();
-  }catch(e){ /* keep last good frame; will retry next tick */ }
+    hideMsg(); render(P); renderedOnce=true; fitWindow();
+  }catch(e){ if(!renderedOnce) showMsg("Couldn’t load the live box score — retrying…"); }
 }
 async function start(){
   fitWindow();
