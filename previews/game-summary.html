@@ -54,7 +54,7 @@
   .goal{display:flex;align-items:center;gap:.5em;padding:.4em 0;border-bottom:1px solid var(--line2);}
   .goal:last-child{border-bottom:0;}
   .accent{flex:0 0 .2em;align-self:stretch;border-radius:.12em;min-width:4px;}
-  .shot{flex:0 0 auto;width:2.6em;height:2.6em;border-radius:50%;overflow:hidden;background:#1b2029;
+  .shot{flex:0 0 auto;width:2.6em;height:2.6em;max-width:74px;max-height:74px;border-radius:50%;overflow:hidden;background:#1b2029;
     display:flex;align-items:center;justify-content:center;}
   .shot img{width:100%;height:100%;object-fit:cover;object-position:50% 16%;}
   .shot .ini{font-weight:800;font-size:.82em;color:#aeb6c2;}
@@ -257,8 +257,17 @@ function build(){
     ps.forEach(z=>pcol.appendChild(penEl(z)));});
   if(!any){const e=document.createElement("div");e.className="pinf";e.style.cssText="opacity:.45;text-align:center;padding:.5em 0";e.textContent="No penalties yet";pcol.appendChild(e);}
   grid.appendChild(pcol);
-  fitCols(scoringCols,46); fitCols([pcol],36);
+  fitCols(scoringCols,33); fitCols([pcol],30);
   fitText();
+  scoringCols.forEach(fillHeight); fillHeight(pcol);
+}
+// Fill leftover vertical space in sparse columns with row spacing (not bigger text).
+function fillHeight(col){
+  const rows=col.querySelectorAll(".goal, .pen"); if(!rows.length)return;
+  const extra=col.clientHeight-col.scrollHeight; if(extra<=2)return;
+  const add=Math.min(extra/rows.length, 30);
+  rows.forEach(r=>{const p=(parseFloat(getComputedStyle(r).paddingTop)||0)+add/2;
+    r.style.paddingTop=p+"px"; r.style.paddingBottom=p+"px";});
 }
 function fitCols(cols,max){
   if(!cols.length)return; let lo=12,hi=max,best=12;
