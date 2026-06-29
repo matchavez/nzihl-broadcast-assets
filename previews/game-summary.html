@@ -118,7 +118,13 @@
 
 <script>
 const SHOT="https://www.nzihl.com/media/leagues/6795/graphics/";
-const TEAM={ DUN:{ink:"#1E9E63"}, SCS:{ink:"#FAC805"}, ADM:{ink:"#F7BE11"}, CRD:{ink:"#E5242B"} };
+const LOGO="https://matchavez.com/nzihl-broadcast-assets/assets/logos/";  // canonical marks
+const TEAM={
+ DUN:{ink:"#1E9E63", dark:"#013B27", logo:"Dunedin_Thunder.png"},                 // Thunder green (exception)
+ SCS:{ink:"#FAC805", dark:"#1D3056", logo:"Skycity Stampede 2000x2000.png"},      // Stampede yellow / navy
+ ADM:{ink:"#2F6FE0", dark:"#081D48", logo:"Pure-NZ-Admirals-2000x2000.png"},      // Admirals blue (override) / navy
+ CRD:{ink:"#E5242B", dark:"#5A0E12", logo:"Red Devils 2000x2000r.png"}            // Red Devils red / deep red
+};
 const PERIOD_DEFS=[{k:"1",label:"1st Period"},{k:"2",label:"2nd Period"},{k:"3",label:"3rd Period"}];
 const LEAGUE="New Zealand Ice Hockey League";
 
@@ -183,19 +189,16 @@ const shotURL=n=>SHOT+encodeURIComponent(n.replace(/\s+/g,""))+".jpg";
 const nameInit=n=>{const x=n.split(/\s+/);return x.length<2?n:x[0][0]+". "+x.slice(1).join(" ");};
 const sum=a=>a.reduce((x,y)=>x+y,0);
 
-function positionWash(g){
-  const wash=document.getElementById("wash"), wr=wash.getBoundingClientRect();
-  const ctr=id=>{const r=document.getElementById(id).getBoundingClientRect();
-    return [(r.left+r.width/2-wr.left)/wr.width*100,(r.top+r.height/2-wr.top)/wr.height*100];};
-  const A=ctr("nameA"), H=ctr("nameB");
-  const a=TEAM[g.away.code].ink, h=TEAM[g.home.code].ink;
-  wash.style.background=
-    `radial-gradient(24% 80% at ${A[0]}% ${A[1]}%, ${a} 0%, transparent 70%),`+
-    `radial-gradient(24% 80% at ${H[0]}% ${H[1]}%, ${h} 0%, transparent 70%)`;
+function washVectors(g){
+  // linear team-colour vectors sweeping outside-in, using each team's dark/scoreboard colour
+  const a=TEAM[g.away.code].dark, h=TEAM[g.home.code].dark;
+  document.getElementById("wash").style.background=
+    `linear-gradient(90deg, ${a} 0%, ${a} 6%, transparent 42%),`+
+    `linear-gradient(270deg, ${h} 0%, ${h} 6%, transparent 42%)`;
 }
 function header(g){
-  document.getElementById("logoA").src=SHOT+g.away.logo;
-  document.getElementById("logoB").src=SHOT+g.home.logo;
+  document.getElementById("logoA").src=LOGO+encodeURIComponent(TEAM[g.away.code].logo);
+  document.getElementById("logoB").src=LOGO+encodeURIComponent(TEAM[g.home.code].logo);
   document.getElementById("nameA").textContent=g.away.name;
   document.getElementById("nameB").textContent=g.home.name;
   const rec=t=>`<b>SOG</b> ${t.sog} &nbsp; <b>PP</b> ${t.pp} &nbsp; <b>PIM</b> ${t.pim}`;
@@ -214,7 +217,7 @@ function header(g){
   document.getElementById("sA").style.color=TEAM[g.away.code].ink;
   document.getElementById("sB").textContent=sum(g.home.line.slice(0,CUR.p));
   document.getElementById("sB").style.color=TEAM[g.home.code].ink;
-  positionWash(g);
+  washVectors(g);
 }
 function goalEl(x){
   const ink=TEAM[x.team].ink, el=document.createElement("div"); el.className="goal";
