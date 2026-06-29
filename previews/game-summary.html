@@ -257,9 +257,18 @@ function build(){
     ps.forEach(z=>pcol.appendChild(penEl(z)));});
   if(!any){const e=document.createElement("div");e.className="pinf";e.style.cssText="opacity:.45;text-align:center;padding:.5em 0";e.textContent="No penalties yet";pcol.appendChild(e);}
   grid.appendChild(pcol);
-  fitCols(scoringCols,33); fitCols([pcol],30);
+  layout(); requestAnimationFrame(layout);
+}
+function layout(){
+  const grid=document.getElementById("grid");
+  const cols=[...grid.querySelectorAll(".col")];
+  const pcol=cols.find(c=>c.classList.contains("penalties"));
+  const scoring=cols.filter(c=>c!==pcol);
+  grid.querySelectorAll(".goal, .pen").forEach(r=>{r.style.paddingTop="";r.style.paddingBottom="";});
+  if(scoring.length) fitCols(scoring,33);
+  if(pcol) fitCols([pcol],30);
   fitText();
-  scoringCols.forEach(fillHeight); fillHeight(pcol);
+  scoring.forEach(fillHeight); if(pcol) fillHeight(pcol);
 }
 // Fill leftover vertical space in sparse columns with row spacing (not bigger text).
 function fillHeight(col){
@@ -280,7 +289,7 @@ function shrinkLine(line,target){
   if(!target)return; target.style.fontSize="";
   let fs=parseFloat(getComputedStyle(target).fontSize),g=60;
   // shrink the element until its own text fits its (flex-sized) box — no overflow under the time
-  while(target.scrollWidth>target.clientWidth+0.5 && fs>8 && g-->0){ fs-=0.5; target.style.fontSize=fs+"px"; }
+  while(target.scrollWidth>target.clientWidth+0.5 && fs>7 && g-->0){ fs-=0.5; target.style.fontSize=fs+"px"; }
 }
 function fitText(){
   document.querySelectorAll(".gname, .pname").forEach(line=>{
