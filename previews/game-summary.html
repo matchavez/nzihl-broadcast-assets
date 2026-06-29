@@ -25,7 +25,8 @@
   .side{display:flex;align-items:center;gap:26px;}
   .side.home{flex-direction:row-reverse;text-align:right;}
   .side .logo{width:120px;height:120px;object-fit:contain;flex:0 0 auto;}
-  .nm{font-weight:800;font-size:40px;line-height:1.02;}
+  .tinfo{flex:1 1 auto;min-width:0;}
+  .nm{font-weight:800;font-size:33px;line-height:1.04;}
   .rec{font-weight:600;font-size:24px;color:var(--sub);margin-top:9px;letter-spacing:.01em;}
   .rec b{color:var(--fg);font-weight:800;}
   .score{font-weight:900;font-size:112px;line-height:.86;flex:0 0 auto;}
@@ -33,10 +34,10 @@
   .status{font-weight:600;font-size:26px;letter-spacing:.01em;color:var(--gold);}
   .date{font-weight:700;font-size:18px;color:var(--sub);margin-top:4px;}
   .pg{margin:11px auto 0;border-collapse:collapse;}
-  .pg th{color:var(--dim);font-weight:800;font-size:15px;letter-spacing:.05em;padding:2px 17px;}
-  .pg td{font-weight:800;font-size:28px;color:var(--fg);padding:2px 17px;text-align:center;}
-  .pg td.lbl{text-align:left;font-size:20px;color:var(--sub);}
-  .pg td.tot{color:var(--gold);font-size:31px;}
+  .pg th{color:var(--dim);font-weight:800;font-size:13px;letter-spacing:.05em;padding:2px 14px;}
+  .pg td{font-weight:800;font-size:23px;color:var(--fg);padding:2px 14px;text-align:center;}
+  .pg td.lbl{text-align:left;font-size:17px;color:var(--sub);}
+  .pg td.tot{color:var(--gold);font-size:26px;}
   .pg .chip{display:inline-block;width:13px;height:13px;border-radius:3px;margin-right:8px;vertical-align:-1px;}
 
   .divider{height:42px;flex:0 0 auto;position:relative;z-index:1;background:linear-gradient(90deg,var(--redA),var(--redB));
@@ -93,7 +94,7 @@
   <header>
     <div class="side away">
       <img class="logo" id="logoA" alt="">
-      <div><div class="nm" id="nameA"></div><div class="rec" id="recA"></div></div>
+      <div class="tinfo"><div class="nm" id="nameA"></div><div class="rec" id="recA"></div></div>
       <div class="score" id="sA"></div>
     </div>
     <div class="center">
@@ -103,7 +104,7 @@
     </div>
     <div class="side home">
       <img class="logo" id="logoB" alt="">
-      <div><div class="nm" id="nameB"></div><div class="rec" id="recB"></div></div>
+      <div class="tinfo"><div class="nm" id="nameB"></div><div class="rec" id="recB"></div></div>
       <div class="score" id="sB"></div>
     </div>
   </header>
@@ -245,6 +246,7 @@ function build(){
   const grid=document.getElementById("grid"); grid.innerHTML="";
   const periods=PERIOD_DEFS.slice(0,CUR.p);
   grid.style.gridTemplateColumns=`repeat(${periods.length+1}, 1fr)`;
+  grid.style.padding = periods.length===1 ? "0 180px" : "0";  // 1st-period state: buffer the 2 columns inward
   const scoringCols=[];
   periods.forEach(d=>{
     const col=document.createElement("div");col.className="col";col.innerHTML=`<h2>${d.label}</h2>`;
