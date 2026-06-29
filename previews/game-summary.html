@@ -29,7 +29,7 @@
   .rec b{color:var(--fg);font-weight:800;}
   .score{font-weight:900;font-size:108px;line-height:.86;flex:0 0 auto;}
   .center{text-align:center;min-width:330px;padding:0 22px;}
-  .status{font-weight:900;font-size:28px;letter-spacing:.14em;color:var(--gold);text-transform:uppercase;}
+  .status{font-weight:600;font-size:26px;letter-spacing:.01em;color:var(--gold);}
   .date{font-weight:700;font-size:18px;color:var(--sub);margin-top:4px;}
   .pg{margin:11px auto 0;border-collapse:collapse;}
   .pg th{color:var(--dim);font-weight:800;font-size:15px;letter-spacing:.05em;padding:2px 17px;}
@@ -42,11 +42,10 @@
   .divider{height:42px;flex:0 0 auto;background:linear-gradient(90deg,var(--redA),var(--redB));
     display:flex;align-items:center;justify-content:center;gap:22px;color:#fff;
     font-weight:800;font-size:18px;letter-spacing:.1em;text-transform:uppercase;}
-  .divider .sep{color:#ffffff7a;font-weight:700;}
-  .divider .upd{display:inline-flex;align-items:center;gap:9px;color:#ffe7b0;}
-  .divider .rpulse{width:9px;height:9px;border-radius:50%;background:#5fe39a;
-    box-shadow:0 0 0 0 rgba(95,227,154,.6);animation:pl 2.4s ease-out infinite;}
-  @keyframes pl{0%{box-shadow:0 0 0 0 rgba(95,227,154,.55)}70%{box-shadow:0 0 0 9px rgba(95,227,154,0)}100%{box-shadow:0 0 0 0 rgba(95,227,154,0)}}
+  .divider .sep{color:#ffffff7a;font-weight:700;margin:0 4px;}
+  .livedot{position:absolute;top:16px;left:22px;z-index:6;width:14px;height:14px;border-radius:50%;
+    background:#5fe39a;box-shadow:0 0 0 0 rgba(95,227,154,.6);animation:pl 2.2s ease-out infinite;}
+  @keyframes pl{0%{box-shadow:0 0 0 0 rgba(95,227,154,.55)}70%{box-shadow:0 0 0 11px rgba(95,227,154,0)}100%{box-shadow:0 0 0 0 rgba(95,227,154,0)}}
 
   /* dynamic period columns */
   #grid{flex:1 1 auto;min-height:0;display:grid;gap:0;}
@@ -54,7 +53,7 @@
   .col:last-child{border-right:0;}
   .col h2{font-size:.6em;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--sub);
     margin-bottom:.5em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .col.pen h2{color:#e7b3b8;}
+  .col.penalties h2{color:#e7b3b8;}
 
   .goal{display:flex;align-items:center;gap:.5em;padding:.36em 0;border-bottom:1px solid var(--line2);}
   .goal:last-child{border-bottom:0;}
@@ -91,6 +90,7 @@
 </head>
 <body>
 <div id="fit"><div id="stage">
+  <span class="livedot" title="Live — refreshing"></span>
   <header>
     <div class="side away">
       <img class="logo" src="https://www.nzihl.com/media/leagues/6795/graphics/thunder.png" alt="">
@@ -164,8 +164,7 @@ const sum=a=>a.reduce((x,y)=>x+y,0);
 
 function divider(){
   document.getElementById("divider").innerHTML =
-    `<span>${LEAGUE}</span><span class="sep">|</span><span>${VENUE}</span><span class="sep">|</span>`+
-    `<span class="upd"><span class="rpulse"></span>Updates every 15s during play</span>`;
+    `<span>${LEAGUE}</span><span class="sep">|</span><span>${VENUE}</span>`;
 }
 function periodGrid(){
   const keys=PERIOD_DEFS.slice(0,CURRENT).map(d=>d.k);
@@ -208,7 +207,7 @@ function build(){
     gs.forEach(g=>col.appendChild(goalEl(g)));
     grid.appendChild(col); scoringCols.push(col);
   });
-  const pcol=document.createElement("div");pcol.className="col pen";pcol.innerHTML=`<h2>Penalty Summary</h2>`;
+  const pcol=document.createElement("div");pcol.className="col penalties";pcol.innerHTML=`<h2>Penalty Summary</h2>`;
   let anyPen=false;
   periods.forEach(d=>{const ps=PENS.filter(p=>p.p===d.k);if(!ps.length)return;anyPen=true;
     const sub=document.createElement("div");sub.className="psub";sub.textContent=d.label;pcol.appendChild(sub);
