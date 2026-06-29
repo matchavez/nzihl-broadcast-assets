@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NZIHL Live Game Summary</title>
+<link rel="preconnect" href="https://rsms.me/">
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+<style>
+  :root{ --bg:#111111; --line:#2a2f3a; --line2:#20242e;
+    --fg:#f4f6fa; --sub:#c3c9d4; --dim:#878d99; --gold:#FFCF49; --redA:#b42026; --redB:#7c1014; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:#000;font-family:Inter,-apple-system,Segoe UI,sans-serif;font-feature-settings:"tnum" 1,"cv05" 1;-webkit-font-smoothing:antialiased;}
+  #fit{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+  #stage{width:1840px;height:1000px;flex:0 0 auto;position:relative;color:var(--fg);background:var(--bg);overflow:hidden;display:flex;flex-direction:column;}
+  #wash{position:absolute;left:0;top:0;width:100%;height:230px;z-index:0;pointer-events:none;filter:blur(48px);opacity:.6;}
+  .livedot{position:absolute;top:16px;left:22px;z-index:6;width:14px;height:14px;border-radius:50%;background:#5fe39a;box-shadow:0 0 0 0 rgba(95,227,154,.6);animation:pl 2.2s ease-out infinite;}
+  @keyframes pl{0%{box-shadow:0 0 0 0 rgba(95,227,154,.55)}70%{box-shadow:0 0 0 11px rgba(95,227,154,0)}100%{box-shadow:0 0 0 0 rgba(95,227,154,0)}}
+  header{height:188px;flex:0 0 auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 60px;position:relative;z-index:1;}
+  .side{display:flex;align-items:center;gap:26px;}
+  .side.home{flex-direction:row-reverse;text-align:right;}
+  .side .logo{width:120px;height:120px;object-fit:contain;flex:0 0 auto;}
+  .tinfo{flex:1 1 auto;min-width:0;}
+  .nm{font-weight:800;font-size:33px;line-height:1.04;}
+  .rec{font-weight:600;font-size:24px;color:var(--sub);margin-top:9px;letter-spacing:.01em;}
+  .rec b{color:var(--fg);font-weight:800;}
+  .score{font-weight:900;font-size:112px;line-height:.86;flex:0 0 auto;}
+  .side.away .score{margin-right:52px;}
+  .side.home .score{margin-left:52px;}
+  .center{text-align:center;min-width:330px;padding:0 22px;}
+  .status{font-weight:600;font-size:26px;letter-spacing:.01em;color:var(--gold);}
+  .date{font-weight:700;font-size:18px;color:var(--sub);margin-top:4px;}
+  .pg{margin:11px auto 0;border-collapse:collapse;}
+  .pg th{color:var(--dim);font-weight:800;font-size:13px;letter-spacing:.05em;padding:2px 14px;}
+  .pg td{font-weight:800;font-size:23px;color:var(--fg);padding:2px 14px;text-align:center;}
+  .pg td.lbl{text-align:left;font-size:17px;color:var(--sub);}
+  .pg td.tot{color:var(--gold);font-size:26px;}
+  .pg .chip{display:inline-block;width:13px;height:13px;border-radius:3px;margin-right:8px;vertical-align:-1px;}
+  .divider{height:42px;flex:0 0 auto;position:relative;z-index:1;background:linear-gradient(90deg,var(--redA),var(--redB));display:flex;align-items:center;justify-content:center;gap:14px;color:#fff;font-weight:800;font-size:18px;letter-spacing:.1em;text-transform:uppercase;}
+  .divider .sep{color:#ffffff7a;font-weight:700;margin:0 4px;}
+  #grid{flex:1 1 auto;min-height:0;display:grid;gap:0;position:relative;z-index:1;}
+  .col{min-width:0;height:100%;overflow:hidden;padding:16px 26px 8px;border-right:1px solid var(--line2);}
+  .col:last-child{border-right:0;}
+  .col h2{font-size:.62em;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--sub);margin-bottom:.5em;text-align:center;white-space:nowrap;}
+  .col.penalties h2{color:#e7b3b8;}
+  .goal{display:flex;align-items:center;gap:.5em;padding:.4em 0;border-bottom:1px solid var(--line2);}
+  .goal:last-child{border-bottom:0;}
+  .accent{flex:0 0 .2em;align-self:stretch;border-radius:.12em;min-width:4px;}
+  .shot{flex:0 0 auto;width:2.6em;height:2.6em;max-width:74px;max-height:74px;border-radius:50%;overflow:hidden;background:#1b2029;display:flex;align-items:center;justify-content:center;}
+  .shot img{width:100%;height:100%;object-fit:cover;object-position:50% 16%;}
+  .shot .ini{font-weight:800;font-size:.82em;color:#aeb6c2;}
+  .gmain{flex:1 1 auto;min-width:0;}
+  .gname{font-weight:800;font-size:1.0em;line-height:1.08;white-space:nowrap;}
+  .gname .no{color:var(--dim);font-weight:700;margin-right:.25em;}
+  .gsub{display:flex;align-items:baseline;gap:.55em;margin-top:.12em;white-space:nowrap;}
+  .gast{flex:1 1 auto;min-width:0;overflow:hidden;font-size:.62em;color:var(--dim);}
+  .gast .unassist{font-style:italic;font-weight:200;}
+  .gtag{flex:0 0 auto;font-weight:800;font-size:.5em;padding:.16em .5em;border-radius:.4em;letter-spacing:.04em;background:#33271a;color:#ffce7d;}
+  .gtime{flex:0 0 auto;font-weight:800;font-size:.64em;color:var(--sub);}
+  .psubhd{font-size:.55em;font-weight:800;letter-spacing:.12em;color:var(--gold);text-transform:uppercase;margin:.6em 0 .25em;text-align:center;}
+  .psubhd:first-child{margin-top:0;}
+  .pen{display:flex;align-items:center;gap:.5em;padding:.36em 0;border-bottom:1px solid var(--line2);}
+  .pen:last-child{border-bottom:0;}
+  .pwho{flex:1 1 auto;min-width:0;}
+  .pname{font-weight:700;font-size:.9em;line-height:1.08;white-space:nowrap;}
+  .pname .no{color:var(--dim);font-weight:700;margin-right:.24em;}
+  .psub{display:flex;align-items:baseline;gap:.5em;margin-top:.1em;white-space:nowrap;}
+  .pinf{flex:1 1 auto;min-width:0;overflow:hidden;font-size:.58em;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;}
+  .ppim{flex:0 0 auto;font-weight:700;font-size:.55em;color:#d7adb1;}
+  .ptime{flex:0 0 auto;font-weight:800;font-size:.62em;color:var(--sub);}
+  #msg{position:absolute;inset:0;z-index:7;display:flex;align-items:center;justify-content:center;text-align:center;
+    color:var(--sub);font-size:30px;font-weight:600;padding:60px;line-height:1.5;}
+</style>
+</head>
+<body>
+<div id="fit"><div id="stage">
+  <div id="wash"></div>
+  <span class="livedot"></span>
+  <header>
+    <div class="side away"><img class="logo" id="logoA" alt=""><div class="tinfo"><div class="nm" id="nameA"></div><div class="rec" id="recA"></div></div><div class="score" id="sA"></div></div>
+    <div class="center"><div class="status" id="status"></div><div class="date" id="date"></div><table class="pg" id="pgrid"></table></div>
+    <div class="side home"><img class="logo" id="logoB" alt=""><div class="tinfo"><div class="nm" id="nameB"></div><div class="rec" id="recB"></div></div><div class="score" id="sB"></div></div>
+  </header>
+  <div class="divider" id="divider"></div>
+  <div id="grid"></div>
+  <div id="msg" style="display:none"></div>
+</div></div>
+
+<script>
+// ---- config ------------------------------------------------------------
+// CORS shim in front of nzihl. Swap SHIM to your own CORS-passthrough Worker for production.
+const SHIM = u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u);
+const MANIFESTS = [
+  {league:"nzihl",  url:"https://raw.githubusercontent.com/matchavez/nzihl-broadcast-rosters/main/boxscores.json",  clientid:7131, leagueid:35499},
+  {league:"nzwihl", url:"https://raw.githubusercontent.com/matchavez/nzwihl-broadcast-rosters/main/boxscores.json", clientid:7132, leagueid:35501},
+];
+const LOGO="https://matchavez.com/nzihl-broadcast-assets/assets/logos/";
+const SHOT="https://www.nzihl.com/media/leagues/6795/graphics/";
+// team visuals keyed by nzihl teamID
+const REG={
+ "674110":{code:"ADM", ink:"#2F6FE0", dark:"#081D48", logo:"Pure-NZ-Admirals-2000x2000.png", venue:"Avondale Skate & Sport, Auckland"},
+ "675633":{code:"CRD", ink:"#E5242B", dark:"#5A0E12", logo:"Red Devils 2000x2000r.png", venue:"Alpine Ice, Christchurch"},
+ "675634":{code:"DUN", ink:"#1E9E63", dark:"#013B27", logo:"Dunedin_Thunder.png", venue:"Dunedin Ice Stadium"},
+ "675635":{code:"SCS", ink:"#FAC805", dark:"#1D3056", logo:"Skycity Stampede 2000x2000.png", venue:"Queenstown Ice Arena"},
+ "674109":{code:"BSW", ink:"#F7AF28", dark:"#3A1320", logo:"Botany Swarm 2000x2000.png", venue:"Paradice Botany, Auckland"},
+ "675636":{code:"AST", ink:"#9FB6C8", dark:"#1c2a35", logo:"Auckland-Steel-White.png", venue:"Avondale, Auckland"},
+ "675637":{code:"CIN", ink:"#E0564E", dark:"#4a1410", logo:"Inferno-White.png", venue:"Alpine Ice, Christchurch"},
+ "675638":{code:"DTW", ink:"#1E9E63", dark:"#013B27", logo:"thunder-women-white.png", venue:"Dunedin Ice Stadium"},
+ "675639":{code:"WLD", ink:"#36C2C2", dark:"#0c3a3a", logo:"Wakatipu-wild-white.png", venue:"Queenstown Ice Arena"},
+};
+const DEFV={ink:"#9aa3ad", dark:"#262a31", logo:"", venue:""};
+const vis=id=>REG[id]||DEFV;
+
+// ---- helpers -----------------------------------------------------------
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const WD=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const slug=s=>s.toLowerCase().replace(/&/g,"and").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+const decamel=s=>s.replace(/([a-z\.])([A-Z])/g,"$1 $2");
+const ini=n=>n.split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase();
+const shotURL=n=>SHOT+encodeURIComponent(n.replace(/\s+/g,""))+".jpg";
+const nameInit=n=>{const x=n.split(/\s+/);return x.length<2?n:x[0][0]+". "+x.slice(1).join(" ");};
+const surnameOnly=n=>{const w=decamel(n).trim().split(/\s+/);return w.length>1?w.slice(1).join(" "):w[0];};
+function fmtAssist(a){
+  if(/^unassisted$/i.test(a)) return '<span class="unassist">Unassisted</span>';
+  const parts=a.split(",").map(s=>decamel(s).trim()).filter(Boolean);
+  return parts.length>=2 ? parts.map(surnameOnly).join(", ") : (parts[0]||"");
+}
+const PORDER=[["1","1st Period"],["2","2nd Period"],["3","3rd Period"],["OT","Overtime"]];
+const normP=s=>{s=s.toUpperCase();if(s.startsWith("1"))return"1";if(s.startsWith("2"))return"2";if(s.startsWith("3"))return"3";if(/OT|OVER/.test(s))return"OT";if(/SO|SHOOT/.test(s))return"SO";return s;};
+
+// ---- parse the printPage HTML -----------------------------------------
+function parse(html){
+  const doc=new DOMParser().parseFromString(html,"text/html");
+  const txt=el=>el?el.textContent.replace(/\s+/g," ").trim():"";
+  const h5=[...doc.querySelectorAll("h5")];
+  const findH=re=>h5.find(h=>re.test(h.textContent));
+  const tidOf=el=>{const a=el&&el.querySelector&&el.querySelector('a[href*="teamID="]');const m=a&&a.getAttribute("href").match(/teamID=(\d+)/i);return m?m[1]:null;};
+  const btw=(a,b)=>{const r=[];let e=a&&a.nextElementSibling;while(e&&e!==b){r.push(e);e=e.nextElementSibling;}return r;};
+  const tables=[...doc.querySelectorAll("table")];
+  const scoreTbl=tables[0];
+  const srows=[...scoreTbl.querySelectorAll("tr")];
+  const hdr=[...srows[0].children].map(txt);
+  const pcols=hdr.slice(1,-1).map(normP).filter(p=>["1","2","3","OT","SO"].includes(p));
+  const team=tr=>{const c=[...tr.children].map(txt);const m=c[0].match(/^(.*?)\s+([A-Z]{2,4})$/);
+    return {teamID:tidOf(tr),name:(m?m[1]:c[0]).trim(),code:(m?m[2]:"").trim(),line:c.slice(1,-1).map(n=>+n||0),tot:+c[c.length-1]||0};};
+  const away=team(srows[1]), home=team(srows[2]);
+  const dTbl=tables.find(t=>/SOG/.test(txt(t.querySelector("tr"))));
+  if(dTbl){const dr=[...dTbl.querySelectorAll("tr")];const det=tr=>{const c=[...tr.children].map(txt);return {sog:(c[1]||"").split(" ")[0],pp:c[2]||"",pim:c[3]||""};};
+    Object.assign(away,det(dr[1])); Object.assign(home,det(dr[2]));}
+  // roster: full-name -> teamID (from skater tables)
+  const skaters=[];
+  h5.filter(h=>/SKATERS/i.test(h.textContent)).forEach(h=>{
+    let e=h.nextElementSibling,tbl=null;
+    while(e&&!/^H5$/.test(e.tagName)){if(e.tagName==="TABLE"){tbl=e;break;}if(e.querySelector&&e.querySelector("table")){tbl=e.querySelector("table");break;}e=e.nextElementSibling;}
+    if(tbl)[...tbl.querySelectorAll("tr")].slice(1).forEach(row=>{const id=tidOf(row);if(id)skaters.push({id,text:txt(row)});});
+  });
+  const teamOfName=who=>{const s=skaters.find(sk=>sk.text.includes(who));return s?s.id:null;};
+  // period-grouped section parser
+  function section(h5el,stopEl){
+    const items=[];let per="";
+    btw(h5el,stopEl).forEach(el=>{
+      const t=txt(el);
+      if(/^(1ST|2ND|3RD|\dTH|OVERTIME|OT\d*|SHOOTOUT)(\s+PERIOD)?$/i.test(t)&&!(el.querySelector&&el.querySelector("table"))){per=normP(t);return;}
+      const tbl=(el.querySelector&&el.querySelector("table"))||(el.tagName==="TABLE"?el:null);
+      if(tbl)[...tbl.querySelectorAll("tr")].forEach(r=>{const c=[...r.children].map(txt);if(c[0]&&!/No Penalties/i.test(c[0]))items.push({per,c});});
+    });
+    return items;
+  }
+  const ssH=findH(/SCORING SUMMARY/i),psH=findH(/PENALTY SUMMARY/i),skH=findH(/SKATERS/i);
+  const goals=ssH?section(ssH,psH).map(o=>{const m=o.c[0].match(/^#?(\d+)\s+(.+?)\s*\(([^)]*)\)\s*$/);
+    const who=m?m[2].trim():o.c[0];const id=teamOfName(who);
+    return {p:o.per,t:o.c[o.c.length-1]||"",no:m?+m[1]:"",who,a:m?m[3].trim():"",tag:(o.c[1]||"").replace(/G$/,"").trim(),teamID:id};}):[];
+  const pens=psH?section(psH,skH).map(o=>{const m=o.c[0].match(/^#?(\d+)\s+(.+?)\s*\(([^)]*)\)\s*$/);
+    const tn=m?m[3].trim():"";const id=tn===away.name?away.teamID:tn===home.name?home.teamID:null;
+    return {p:o.per,t:o.c[o.c.length-1]||"",no:m?+m[1]:"",who:m?m[2].trim():o.c[0],inf:o.c[1]||"",dur:o.c[2]||"",teamID:id};}):[];
+  // status / date / time from full text
+  const all=doc.body.textContent.replace(/\s+/g," ");
+  let status="Live";const fm=all.match(/FINAL\s*\/?\s*(OT|SO)?/i);if(fm)status="Final"+(fm[1]?" / "+fm[1].toUpperCase():"");
+  let date="";const dm=all.match(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})(?:st|nd|rd|th)?,\s*(\d{4})/);
+  if(dm){const d=new Date(+dm[3],MON.findIndex(x=>dm[1].startsWith(x)),+dm[2]);date=WD[d.getDay()]+" "+dm[2]+" "+MON[d.getMonth()]+" "+dm[3];}
+  const tm=all.match(/\b(\d{1,2}):(\d{2})\s*([AP]M)\b/i);const time=tm?(tm[1]+":"+tm[2]+" "+tm[3].toUpperCase()):"";
+  return {pcols,away,home,goals,pens,status,date:(date+(time?" · "+time:"")),teammap:{[away.teamID]:"away",[home.teamID]:"home"}};
+}
+
+// ---- render (v9 visuals) ----------------------------------------------
+let LEAGUE_NAME="New Zealand Ice Hockey League", VENUE="";
+function teamObj(p){const v=vis(p.teamID);return {teamID:p.teamID,name:p.name,code:v.code||p.code,ink:v.ink,dark:v.dark,logo:v.logo,sog:p.sog,pp:p.pp,pim:p.pim,line:p.line,tot:p.tot};}
+function washVectors(a,h){document.getElementById("wash").style.background=
+  `linear-gradient(90deg, ${a.dark} 0%, ${a.dark} 6%, transparent 42%),`+
+  `linear-gradient(270deg, ${h.dark} 0%, ${h.dark} 6%, transparent 42%)`;}
+function setLogo(el,t){if(t.logo){el.src=LOGO+encodeURIComponent(t.logo);el.style.visibility="";}else el.style.visibility="hidden";}
+function goalEl(x,ink){const el=document.createElement("div");el.className="goal";
+  el.innerHTML=`<span class="accent" style="background:${ink}"></span>
+    <span class="shot"><span class="ini">${ini(x.who)}</span></span>
+    <span class="gmain"><div class="gname"><span class="no">#${x.no}</span><span class="nmt">${x.who}</span></div>
+      <div class="gsub"><span class="gast">${fmtAssist(x.a)}</span>${x.tag?`<span class="gtag">${x.tag}</span>`:""}<span class="gtime">${x.t}</span></div></span>`;
+  const shot=el.querySelector(".shot"),img=new Image();
+  img.onload=()=>{shot.innerHTML="";shot.appendChild(img);shot.style.boxShadow=`0 0 0 2px ${ink}`;};img.src=shotURL(x.who);
+  el.querySelector(".nmt").dataset.full=x.who;return el;}
+function penEl(x,ink){const el=document.createElement("div");el.className="pen";
+  el.innerHTML=`<span class="accent" style="background:${ink}"></span>
+    <span class="pwho"><div class="pname"><span class="no">${x.no?'#'+x.no:''}</span><span class="nmt">${x.who}</span></div>
+      <div class="psub"><span class="pinf">${x.inf}</span><span class="ppim">${x.dur}</span><span class="ptime">${x.t}</span></div></span>`;
+  el.querySelector(".nmt").dataset.full=x.who;return el;}
+function render(P){
+  const A=teamObj(P.away), H=teamObj(P.home);
+  const inkOf=id=>vis(id).ink;
+  washVectors(A,H);
+  setLogo(document.getElementById("logoA"),A); setLogo(document.getElementById("logoB"),H);
+  document.getElementById("nameA").textContent=A.name; document.getElementById("nameB").textContent=H.name;
+  const rec=t=>`<b>SOG</b> ${t.sog||"–"} &nbsp; <b>PP</b> ${t.pp||"–"} &nbsp; <b>PIM</b> ${t.pim||"–"}`;
+  document.getElementById("recA").innerHTML=rec(A); document.getElementById("recB").innerHTML=rec(H);
+  document.getElementById("status").textContent=P.status;
+  document.getElementById("date").textContent=P.date;
+  document.getElementById("divider").innerHTML=`<span>${LEAGUE_NAME}</span>`+(VENUE?`<span class="sep">|</span><span>${VENUE}</span>`:"");
+  const sA=document.getElementById("sA"),sB=document.getElementById("sB");
+  sA.textContent=A.tot; sA.style.color=A.ink; sB.textContent=H.tot; sB.style.color=H.ink;
+  const keys=P.pcols.length?P.pcols:["1","2","3"];
+  document.getElementById("pgrid").innerHTML="<tr><th></th>"+keys.map(k=>`<th>${k}</th>`).join("")+"<th>T</th></tr>"+
+    [A,H].map(t=>`<tr><td class="lbl"><span class="chip" style="background:${t.ink}"></span>${t.code||""}</td>`+
+      t.line.map(v=>`<td>${v}</td>`).join("")+`<td class="tot">${t.tot}</td></tr>`).join("");
+  // scoring columns = regulation/OT periods present in pcols
+  const periods=PORDER.filter(([k])=>keys.includes(k));
+  const grid=document.getElementById("grid"); grid.innerHTML="";
+  grid.style.gridTemplateColumns=`repeat(${periods.length+1}, 1fr)`;
+  grid.style.padding = periods.length===1 ? "0 180px" : "0";
+  periods.forEach(([k,label])=>{
+    const col=document.createElement("div");col.className="col";col.innerHTML=`<h2>${label}</h2>`;
+    const gs=P.goals.filter(z=>z.p===k);
+    if(!gs.length){const e=document.createElement("div");e.className="gast";e.style.cssText="opacity:.4;text-align:center;padding:.5em 0";e.textContent="No goals";col.appendChild(e);}
+    gs.forEach(z=>col.appendChild(goalEl(z,inkOf(z.teamID))));
+    grid.appendChild(col);
+  });
+  const pcol=document.createElement("div");pcol.className="col penalties";pcol.innerHTML=`<h2>Penalty Summary</h2>`;let any=false;
+  periods.forEach(([k,label])=>{const ps=P.pens.filter(z=>z.p===k);if(!ps.length)return;any=true;
+    const h=document.createElement("div");h.className="psubhd";h.textContent=label;pcol.appendChild(h);
+    ps.forEach(z=>pcol.appendChild(penEl(z,inkOf(z.teamID))));});
+  if(!any){const e=document.createElement("div");e.className="pinf";e.style.cssText="opacity:.4;text-align:center;padding:.5em 0";e.textContent="No penalties";pcol.appendChild(e);}
+  grid.appendChild(pcol);
+  layout(); requestAnimationFrame(layout);
+}
+function fillHeight(col){const rows=col.querySelectorAll(".goal, .pen");if(!rows.length)return;
+  const extra=col.clientHeight-col.scrollHeight;if(extra<=2)return;const add=Math.min(extra/rows.length,30);
+  rows.forEach(r=>{const p=(parseFloat(getComputedStyle(r).paddingTop)||0)+add/2;r.style.paddingTop=p+"px";r.style.paddingBottom=p+"px";});}
+function fitCols(cols,max){if(!cols.length)return;let lo=12,hi=max,best=12;
+  for(let i=0;i<18;i++){const u=(lo+hi)/2;cols.forEach(c=>c.style.fontSize=u+"px");cols[0].getBoundingClientRect();
+    const fits=cols.every(c=>c.scrollHeight<=c.clientHeight+0.5);if(fits){best=u;lo=u;}else{hi=u;}}cols.forEach(c=>c.style.fontSize=best+"px");}
+function shrinkLine(line,target){if(!target)return;target.style.fontSize="";let fs=parseFloat(getComputedStyle(target).fontSize),g=60;
+  while(target.scrollWidth>target.clientWidth+0.5&&fs>7&&g-->0){fs-=0.5;target.style.fontSize=fs+"px";}}
+function fitText(){
+  document.querySelectorAll(".gname, .pname").forEach(line=>{const sp=line.querySelector(".nmt");if(!sp)return;
+    sp.style.fontSize="";sp.textContent=sp.dataset.full;if(line.scrollWidth>line.clientWidth)sp.textContent=nameInit(sp.dataset.full);
+    let fs=parseFloat(getComputedStyle(sp).fontSize),g=60;while(line.scrollWidth>line.clientWidth+0.5&&fs>11&&g-->0){fs-=0.5;sp.style.fontSize=fs+"px";}});
+  document.querySelectorAll(".gsub").forEach(l=>shrinkLine(l,l.querySelector(".gast")));
+  document.querySelectorAll(".psub").forEach(l=>shrinkLine(l,l.querySelector(".pinf")));
+}
+function layout(){const grid=document.getElementById("grid");const cols=[...grid.querySelectorAll(".col")];
+  const pcol=cols.find(c=>c.classList.contains("penalties"));const scoring=cols.filter(c=>c!==pcol);
+  grid.querySelectorAll(".goal, .pen").forEach(r=>{r.style.paddingTop="";r.style.paddingBottom="";});
+  if(scoring.length)fitCols(scoring,33);if(pcol)fitCols([pcol],30);fitText();scoring.forEach(fillHeight);if(pcol)fillHeight(pcol);}
+function fitWindow(){document.getElementById("stage").style.transform="scale("+Math.min(innerWidth/1840,innerHeight/1000)+")";}
+addEventListener("resize",fitWindow);
+function showMsg(t){const m=document.getElementById("msg");m.style.display="flex";m.textContent=t;}
+function hideMsg(){document.getElementById("msg").style.display="none";}
+
+// ---- data flow ---------------------------------------------------------
+async function getJSON(u){const r=await fetch(u,{cache:"no-store"});if(!r.ok)throw 0;return r.json();}
+async function getText(u){const r=await fetch(SHIM(u),{cache:"no-store"});if(!r.ok)throw 0;return r.text();}
+function boxURL(m,gid){return `https://www.${m.league==="nzwihl"?"nzwihl":"nzihl"}.com/leagues/hockey_boxscores.cfm?clientid=${m.clientid}&leagueid=${m.leagueid}&gameid=${gid}&printPage=1&_=${Date.now()}`;}
+
+async function resolve(){
+  const q=new URLSearchParams(location.search);
+  const team=q.get("team"), g=q.get("g")||q.get("gameid");
+  const leagueParam=(q.get("l")||q.get("league")||"").toLowerCase();
+  if(g){ // direct game id
+    const m=MANIFESTS.find(x=> q.get("w")==="1"||leagueParam.startsWith("nzw")||leagueParam==="w" ? x.league==="nzwihl" : x.league==="nzihl");
+    return {m, gid:g, venue:"", leagueName:m.league==="nzwihl"?"New Zealand Women's Ice Hockey League":"New Zealand Ice Hockey League"};
+  }
+  if(!team){ showMsg("Add ?team=red-devils  (or ?g=<gameid> for one game)"); return null; }
+  // team mode: find this team's game from the manifests, nearest to now
+  let best=null, bestDiff=Infinity, bestM=null;
+  for(const m of MANIFESTS){
+    let data; try{ data=await getJSON(m.url);}catch(e){continue;}
+    (data.games||[]).forEach(gm=>{
+      if(!gm.gameid) return;
+      if(slug(gm.away)!==team && slug(gm.home)!==team) return;
+      const dt=new Date(gm.datetime||gm.date).getTime();
+      const diff=Math.abs(dt-Date.now());
+      if(diff<bestDiff){bestDiff=diff;best=gm;bestM=m;}
+    });
+  }
+  if(!best){ showMsg("No game found for “"+team+"”. Check the team slug, or that a game is scheduled."); return null; }
+  return {m:bestM, gid:best.gameid, venue:best.venue||"", leagueName:bestM.league==="nzwihl"?"New Zealand Women's Ice Hockey League":"New Zealand Ice Hockey League"};
+}
+
+let TARGET=null;
+async function tick(){
+  if(!TARGET) return;
+  try{
+    const html=await getText(boxURL(TARGET.m,TARGET.gid));
+    const P=parse(html);
+    VENUE = TARGET.venue || vis(P.home.teamID).venue || "";
+    LEAGUE_NAME = TARGET.leagueName;
+    hideMsg(); render(P); fitWindow();
+  }catch(e){ /* keep last good frame; will retry next tick */ }
+}
+async function start(){
+  fitWindow();
+  TARGET=await resolve();
+  if(!TARGET) return;
+  await tick();
+  const t0=Date.now();
+  const iv=setInterval(()=>{ if(Date.now()-t0>4*3600*1000){clearInterval(iv);return;} tick(); }, 15000);
+}
+start();
+</script>
+</body>
+</html>
