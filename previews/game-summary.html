@@ -16,7 +16,7 @@
     background:var(--bg);overflow:hidden;display:flex;flex-direction:column;}
 
   /* hazy angled team-colour wash behind the teams */
-  #wash{position:absolute;left:0;top:0;width:100%;height:300px;z-index:0;pointer-events:none;filter:blur(55px);opacity:.55;}
+  #wash{position:absolute;left:0;top:0;width:100%;height:230px;z-index:0;pointer-events:none;filter:blur(48px);opacity:.6;}
   .livedot{position:absolute;top:16px;left:22px;z-index:6;width:14px;height:14px;border-radius:50%;
     background:#5fe39a;box-shadow:0 0 0 0 rgba(95,227,154,.6);animation:pl 2.2s ease-out infinite;}
   @keyframes pl{0%{box-shadow:0 0 0 0 rgba(95,227,154,.55)}70%{box-shadow:0 0 0 11px rgba(95,227,154,0)}100%{box-shadow:0 0 0 0 rgba(95,227,154,0)}}
@@ -62,7 +62,7 @@
   .gname{font-weight:800;font-size:1.0em;line-height:1.08;white-space:nowrap;}
   .gname .no{color:var(--dim);font-weight:700;margin-right:.28em;}
   .gsub{display:flex;align-items:baseline;gap:.55em;margin-top:.12em;white-space:nowrap;}
-  .gast{font-size:.62em;color:var(--dim);overflow:hidden;text-overflow:ellipsis;}
+  .gast{font-size:.62em;color:var(--dim);min-width:0;}
   .gtag{flex:0 0 auto;font-weight:800;font-size:.5em;padding:.16em .5em;border-radius:.4em;letter-spacing:.04em;
     background:#33271a;color:#ffce7d;}
   .gtime{flex:0 0 auto;margin-left:auto;font-weight:800;font-size:.64em;color:var(--sub);}
@@ -73,7 +73,7 @@
   .pname{font-weight:700;font-size:.9em;line-height:1.08;white-space:nowrap;}
   .pname .no{color:var(--dim);font-weight:700;margin-right:.24em;}
   .psub{display:flex;align-items:baseline;gap:.5em;margin-top:.1em;white-space:nowrap;}
-  .pinf{font-size:.58em;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;}
+  .pinf{font-size:.58em;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;min-width:0;}
   .ppim{flex:0 0 auto;font-weight:700;font-size:.55em;color:#d7adb1;}
   .ptime{flex:0 0 auto;margin-left:auto;font-weight:800;font-size:.62em;color:var(--sub);}
   .psubhd{font-size:.55em;font-weight:800;letter-spacing:.12em;color:var(--gold);text-transform:uppercase;margin:.6em 0 .25em;text-align:center;}
@@ -183,14 +183,17 @@ const shotURL=n=>SHOT+encodeURIComponent(n.replace(/\s+/g,""))+".jpg";
 const nameInit=n=>{const x=n.split(/\s+/);return x.length<2?n:x[0][0]+". "+x.slice(1).join(" ");};
 const sum=a=>a.reduce((x,y)=>x+y,0);
 
-function setWash(g){
+function positionWash(g){
+  const wash=document.getElementById("wash"), wr=wash.getBoundingClientRect();
+  const ctr=id=>{const r=document.getElementById(id).getBoundingClientRect();
+    return [(r.left+r.width/2-wr.left)/wr.width*100,(r.top+r.height/2-wr.top)/wr.height*100];};
+  const A=ctr("nameA"), H=ctr("nameB");
   const a=TEAM[g.away.code].ink, h=TEAM[g.home.code].ink;
-  document.getElementById("wash").style.background=
-    `radial-gradient(58% 150% at 16% 130%, ${a} 0%, transparent 62%),`+
-    `radial-gradient(58% 150% at 84% 130%, ${h} 0%, transparent 62%)`;
+  wash.style.background=
+    `radial-gradient(24% 80% at ${A[0]}% ${A[1]}%, ${a} 0%, transparent 70%),`+
+    `radial-gradient(24% 80% at ${H[0]}% ${H[1]}%, ${h} 0%, transparent 70%)`;
 }
 function header(g){
-  setWash(g);
   document.getElementById("logoA").src=SHOT+g.away.logo;
   document.getElementById("logoB").src=SHOT+g.home.logo;
   document.getElementById("nameA").textContent=g.away.name;
@@ -211,6 +214,7 @@ function header(g){
   document.getElementById("sA").style.color=TEAM[g.away.code].ink;
   document.getElementById("sB").textContent=sum(g.home.line.slice(0,CUR.p));
   document.getElementById("sB").style.color=TEAM[g.home.code].ink;
+  positionWash(g);
 }
 function goalEl(x){
   const ink=TEAM[x.team].ink, el=document.createElement("div"); el.className="goal";
@@ -254,7 +258,7 @@ function build(){
   if(!any){const e=document.createElement("div");e.className="pinf";e.style.cssText="opacity:.45;text-align:center;padding:.5em 0";e.textContent="No penalties yet";pcol.appendChild(e);}
   grid.appendChild(pcol);
   fitCols(scoringCols,46); fitCols([pcol],36);
-  fitNames();
+  fitText();
 }
 function fitCols(cols,max){
   if(!cols.length)return; let lo=12,hi=max,best=12;
@@ -262,16 +266,22 @@ function fitCols(cols,max){
     const fits=cols.every(c=>c.scrollHeight<=c.clientHeight+0.5); if(fits){best=u;lo=u;}else{hi=u;}}
   cols.forEach(c=>c.style.fontSize=best+"px");
 }
-// Never ellipsis a surname: try full name; fall back to "F. Last"; then shrink the name only.
-function fitNames(){
+// No ellipsis anywhere. Names: full → "F. Last" → shrink (never cut). Assists/infraction: shrink to fit.
+function shrinkLine(line,target){
+  if(!target)return; target.style.fontSize="";
+  let fs=parseFloat(getComputedStyle(target).fontSize),g=60;
+  while(line.scrollWidth>line.clientWidth+0.5 && fs>8 && g-->0){ fs-=0.5; target.style.fontSize=fs+"px"; }
+}
+function fitText(){
   document.querySelectorAll(".gname, .pname").forEach(line=>{
     const sp=line.querySelector(".nmt"); if(!sp)return;
     sp.style.fontSize=""; sp.textContent=sp.dataset.full;
     if(line.scrollWidth>line.clientWidth) sp.textContent=nameInit(sp.dataset.full);
-    let fs=parseFloat(getComputedStyle(sp).fontSize);
-    let guard=40;
-    while(line.scrollWidth>line.clientWidth+0.5 && fs>11 && guard-->0){ fs-=0.5; sp.style.fontSize=fs+"px"; }
+    let fs=parseFloat(getComputedStyle(sp).fontSize),g=60;
+    while(line.scrollWidth>line.clientWidth+0.5 && fs>11 && g-->0){ fs-=0.5; sp.style.fontSize=fs+"px"; }
   });
+  document.querySelectorAll(".gsub").forEach(l=>shrinkLine(l,l.querySelector(".gast")));
+  document.querySelectorAll(".psub").forEach(l=>shrinkLine(l,l.querySelector(".pinf")));
 }
 function fitWindow(){document.getElementById("stage").style.transform="scale("+Math.min(innerWidth/1840,innerHeight/1000)+")";}
 addEventListener("resize",()=>{fitWindow();build();});
