@@ -270,7 +270,8 @@ function fitCols(cols,max){
 function shrinkLine(line,target){
   if(!target)return; target.style.fontSize="";
   let fs=parseFloat(getComputedStyle(target).fontSize),g=60;
-  while(line.scrollWidth>line.clientWidth+0.5 && fs>8 && g-->0){ fs-=0.5; target.style.fontSize=fs+"px"; }
+  // shrink the element until its own text fits its (flex-sized) box — no overflow under the time
+  while(target.scrollWidth>target.clientWidth+0.5 && fs>8 && g-->0){ fs-=0.5; target.style.fontSize=fs+"px"; }
 }
 function fitText(){
   document.querySelectorAll(".gname, .pname").forEach(line=>{
