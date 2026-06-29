@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NZIHL Live Game Summary — mock v4</title>
+<link rel="preconnect" href="https://rsms.me/">
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+<style>
+  :root{
+    --bg-top:#0e1116; --bg-bot:#05070a; --line2:#1b212b;
+    --fg:#f4f6fa; --sub:#c3c9d4; --dim:#828995; --gold:#FFCF49;
+    --redA:#b42026; --redB:#7c1014;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:#000;font-family:Inter,-apple-system,Segoe UI,sans-serif;
+    font-feature-settings:"tnum" 1,"cv05" 1;-webkit-font-smoothing:antialiased;}
+  #fit{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+  #stage{width:1840px;height:1000px;flex:0 0 auto;position:relative;color:var(--fg);
+    background:linear-gradient(180deg,var(--bg-top),var(--bg-bot));overflow:hidden;
+    display:flex;flex-direction:column;}
+
+  /* header */
+  header{height:182px;flex:0 0 auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 60px;}
+  .side{display:flex;align-items:center;gap:26px;}
+  .side.home{flex-direction:row-reverse;text-align:right;}
+  .side .logo{width:118px;height:118px;object-fit:contain;flex:0 0 auto;}
+  .nm{font-weight:800;font-size:39px;line-height:1.02;}
+  .rec{font-weight:600;font-size:18px;color:var(--sub);margin-top:7px;}
+  .rec b{color:var(--fg);font-weight:800;}
+  .score{font-weight:900;font-size:108px;line-height:.86;flex:0 0 auto;}
+  .center{text-align:center;min-width:330px;padding:0 22px;}
+  .status{font-weight:900;font-size:28px;letter-spacing:.14em;color:var(--gold);text-transform:uppercase;}
+  .date{font-weight:700;font-size:18px;color:var(--sub);margin-top:4px;}
+  .pg{margin:11px auto 0;border-collapse:collapse;}
+  .pg th{color:var(--dim);font-weight:800;font-size:15px;letter-spacing:.05em;padding:2px 17px;}
+  .pg td{font-weight:800;font-size:28px;color:var(--fg);padding:2px 17px;text-align:center;}
+  .pg td.lbl{text-align:left;font-size:20px;color:var(--sub);}
+  .pg td.tot{color:var(--gold);font-size:31px;}
+  .pg .chip{display:inline-block;width:13px;height:13px;border-radius:3px;margin-right:8px;vertical-align:-1px;}
+
+  /* brand divider — now carries league | venue | updates */
+  .divider{height:42px;flex:0 0 auto;background:linear-gradient(90deg,var(--redA),var(--redB));
+    display:flex;align-items:center;justify-content:center;gap:22px;color:#fff;
+    font-weight:800;font-size:18px;letter-spacing:.1em;text-transform:uppercase;}
+  .divider .sep{color:#ffffff7a;font-weight:700;}
+  .divider .upd{display:inline-flex;align-items:center;gap:9px;color:#ffe7b0;}
+  .divider .rpulse{width:9px;height:9px;border-radius:50%;background:#5fe39a;
+    box-shadow:0 0 0 0 rgba(95,227,154,.6);animation:pl 2.4s ease-out infinite;}
+  @keyframes pl{0%{box-shadow:0 0 0 0 rgba(95,227,154,.55)}70%{box-shadow:0 0 0 9px rgba(95,227,154,0)}100%{box-shadow:0 0 0 0 rgba(95,227,154,0)}}
+
+  /* dynamic period columns */
+  #grid{flex:1 1 auto;min-height:0;display:grid;gap:0;}
+  .col{min-width:0;height:100%;overflow:hidden;padding:16px 30px 8px;border-right:1px solid var(--line2);}
+  .col:last-child{border-right:0;}
+  .col h2{font-size:.6em;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--sub);
+    margin-bottom:.5em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .col.pen h2{color:#e7b3b8;}
+
+  .goal{display:flex;align-items:center;gap:.5em;padding:.36em 0;border-bottom:1px solid var(--line2);}
+  .goal:last-child{border-bottom:0;}
+  .accent{flex:0 0 .2em;align-self:stretch;border-radius:.12em;min-width:4px;}
+  .shot{flex:0 0 auto;width:2.5em;height:2.5em;border-radius:50%;overflow:hidden;background:#1b2029;
+    display:flex;align-items:center;justify-content:center;}
+  .shot img{width:100%;height:100%;object-fit:cover;object-position:50% 16%;}
+  .shot .ini{font-weight:800;font-size:.82em;color:#aeb6c2;}
+  .gmain{flex:1 1 auto;min-width:0;}
+  .gwho{font-weight:800;font-size:.95em;line-height:1.06;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .gwho .no{color:var(--dim);font-weight:700;margin-right:.25em;}
+  .gast{font-size:.64em;color:var(--dim);margin-top:.12em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .gtime{flex:0 0 auto;font-weight:800;font-size:.84em;color:var(--sub);}
+  .gtag{flex:0 0 auto;font-weight:800;font-size:.5em;padding:.18em .5em;border-radius:.4em;letter-spacing:.04em;
+    background:#33271a;color:#ffce7d;}
+
+  .psub{font-size:.55em;font-weight:800;letter-spacing:.12em;color:var(--gold);text-transform:uppercase;margin:.6em 0 .25em;}
+  .psub:first-child{margin-top:0;}
+  .pen{display:flex;align-items:center;gap:.45em;padding:.32em 0;border-bottom:1px solid var(--line2);}
+  .pen:last-child{border-bottom:0;}
+  .pwho{flex:1 1 auto;min-width:0;}
+  .pname{font-weight:700;font-size:.82em;line-height:1.06;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pname .no{color:var(--dim);font-weight:700;margin-right:.2em;}
+  .pinf{font-size:.6em;color:var(--dim);margin-top:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ptime{flex:0 0 auto;font-weight:800;font-size:.78em;color:var(--sub);}
+  .ppim{flex:0 0 auto;font-weight:800;font-size:.58em;color:var(--dim);}
+
+  #sim{position:fixed;left:12px;bottom:12px;display:flex;gap:6px;z-index:9;}
+  #sim button{font:600 12px Inter,sans-serif;color:#cfd5df;background:#171b22;border:1px solid #2c323d;
+    border-radius:7px;padding:6px 11px;cursor:pointer;}
+  #sim button.on{background:#FFCF49;color:#1a1500;border-color:#FFCF49;}
+  #sim span{color:#6b7280;font:600 11px Inter,sans-serif;align-self:center;margin-right:4px;}
+</style>
+</head>
+<body>
+<div id="fit"><div id="stage">
+  <header>
+    <div class="side away">
+      <img class="logo" src="https://www.nzihl.com/media/leagues/6795/graphics/thunder.png" alt="">
+      <div><div class="nm">Dunedin Thunder</div><div class="rec"><b>SOG</b> 24 &nbsp; <b>PP</b> 2/6 &nbsp; <b>PIM</b> 12</div></div>
+      <div class="score" id="sA">4</div>
+    </div>
+    <div class="center">
+      <div class="status" id="status">Final</div>
+      <div class="date">Fri 19 Jun 2026 · 7:00 PM</div>
+      <table class="pg" id="pgrid"></table>
+    </div>
+    <div class="side home">
+      <img class="logo" src="https://www.nzihl.com/media/leagues/6795/graphics/stampede.png" alt="">
+      <div><div class="nm">SkyCity Stampede</div><div class="rec"><b>SOG</b> 44 &nbsp; <b>PP</b> 0/6 &nbsp; <b>PIM</b> 12</div></div>
+      <div class="score" id="sB">9</div>
+    </div>
+  </header>
+
+  <div class="divider" id="divider"></div>
+  <div id="grid"></div>
+</div></div>
+
+<div id="sim"><span>PREVIEW — game state:</span>
+  <button data-p="1">1st period</button>
+  <button data-p="2">2nd period</button>
+  <button data-p="3">3rd / Final</button>
+</div>
+
+<script>
+const SHOT_BASE="https://www.nzihl.com/media/leagues/6795/graphics/";
+const TEAM={DUN:{ink:"#FDAD19"},SCS:{ink:"#FAC805"}};
+const PERIOD_DEFS=[{k:"1",label:"1st Period"},{k:"2",label:"2nd Period"},{k:"3",label:"3rd Period"}];
+const LEAGUE="New Zealand Ice Hockey League", VENUE="Queenstown Ice Arena";
+const PLINE={DUN:[3,1,0],SCS:[0,6,3]};
+const AWAY={code:"DUN"},HOME={code:"SCS"};
+
+const GOALS=[
+ {p:"1",t:"16:39",team:"DUN",no:72,who:"Samuel Loiselle",a:"Stegmann, Audas",tag:"PP"},
+ {p:"1",t:"15:00",team:"DUN",no:24,who:"Jack Lewis",a:"Eaden, Loiselle",tag:"PP"},
+ {p:"1",t:"12:17",team:"DUN",no:93,who:"Luke Stegmann",a:"Beckstead, Audas",tag:""},
+ {p:"2",t:"18:58",team:"SCS",no:11,who:"Conner Jean",a:"Frear, Devlin",tag:""},
+ {p:"2",t:"16:20",team:"SCS",no:11,who:"Conner Jean",a:"Devlin, Frear",tag:""},
+ {p:"2",t:"13:06",team:"SCS",no:24,who:"Lachlan Frear",a:"Roth, Jean",tag:""},
+ {p:"2",t:"7:41",team:"SCS",no:21,who:"Dylan Devlin",a:"Unassisted",tag:""},
+ {p:"2",t:"6:50",team:"SCS",no:55,who:"Max Roth",a:"Frear",tag:""},
+ {p:"2",t:"4:22",team:"SCS",no:11,who:"Conner Jean",a:"Devlin, Roth",tag:""},
+ {p:"2",t:"2:42",team:"DUN",no:24,who:"Jack Lewis",a:"Audas, Orr",tag:""},
+ {p:"3",t:"19:28",team:"SCS",no:9,who:"Axel Ruski-Jones",a:"Amston, Flight",tag:"SH"},
+ {p:"3",t:"15:35",team:"SCS",no:24,who:"Lachlan Frear",a:"Devlin, Jean",tag:""},
+ {p:"3",t:"6:57",team:"SCS",no:21,who:"Dylan Devlin",a:"Frear, Jean",tag:""},
+];
+const PENS=[
+ {p:"1",t:"17:25",team:"SCS",no:28,who:"Jake Hutchins",inf:"Delay of game",pim:"2:00"},
+ {p:"1",t:"16:47",team:"SCS",no:25,who:"Maxwell Macharg",inf:"Interference",pim:"2:00"},
+ {p:"1",t:"14:31",team:"DUN",no:6,who:"Austin Goh",inf:"Slashing",pim:"2:00"},
+ {p:"1",t:"10:38",team:"SCS",no:21,who:"Dylan Devlin",inf:"Tripping",pim:"2:00"},
+ {p:"1",t:"8:48",team:"SCS",no:8,who:"Connor Harrison",inf:"High-sticking",pim:"2:00"},
+ {p:"1",t:"5:51",team:"DUN",no:91,who:"Morgan Blair",inf:"Roughing",pim:"2:00"},
+ {p:"1",t:"1:28",team:"DUN",no:7,who:"William Bary",inf:"Hooking",pim:"2:00"},
+ {p:"2",t:"9:44",team:"DUN",no:24,who:"Jack Lewis",inf:"Roughing",pim:"2:00"},
+ {p:"2",t:"6:50",team:"DUN",no:72,who:"Samuel Loiselle",inf:"Cross-checking",pim:"2:00"},
+ {p:"2",t:"0:22",team:"SCS",no:21,who:"Dylan Devlin",inf:"Holding",pim:"2:00"},
+ {p:"3",t:"11:39",team:"SCS",no:3,who:"Stefan Amston",inf:"Hooking",pim:"2:00"},
+ {p:"3",t:"4:21",team:"DUN",no:0,who:"James Moore",inf:"Interference",pim:"2:00"},
+];
+
+let CURRENT=3;
+const ini=n=>n.split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase();
+const shotURL=n=>SHOT_BASE+encodeURIComponent(n.replace(/\s+/g,""))+".jpg";
+const sum=a=>a.reduce((x,y)=>x+y,0);
+
+function divider(){
+  document.getElementById("divider").innerHTML =
+    `<span>${LEAGUE}</span><span class="sep">|</span><span>${VENUE}</span><span class="sep">|</span>`+
+    `<span class="upd"><span class="rpulse"></span>Updates every 15s during play</span>`;
+}
+function periodGrid(){
+  const keys=PERIOD_DEFS.slice(0,CURRENT).map(d=>d.k);
+  document.getElementById("pgrid").innerHTML=
+    "<tr><th></th>"+keys.map(k=>`<th>${k}</th>`).join("")+"<th>T</th></tr>"+
+    [AWAY,HOME].map(s=>{const line=PLINE[s.code].slice(0,CURRENT);
+      return `<tr><td class="lbl"><span class="chip" style="background:${TEAM[s.code].ink}"></span>${s.code}</td>`+
+        line.map(v=>`<td>${v}</td>`).join("")+`<td class="tot">${sum(line)}</td></tr>`;}).join("");
+  document.getElementById("sA").textContent=sum(PLINE.DUN.slice(0,CURRENT));
+  document.getElementById("sB").textContent=sum(PLINE.SCS.slice(0,CURRENT));
+  document.getElementById("status").textContent=CURRENT>=3?"Final":(CURRENT===2?"2nd Period · Live":"1st Period · Live");
+}
+function goalEl(g){
+  const ink=TEAM[g.team].ink,el=document.createElement("div");el.className="goal";
+  el.innerHTML=`<span class="accent" style="background:${ink}"></span>
+    <span class="shot"><span class="ini">${ini(g.who)}</span></span>
+    <span class="gmain"><div class="gwho"><span class="no">#${g.no}</span>${g.who}</div><div class="gast">${g.a}</div></span>
+    ${g.tag?`<span class="gtag">${g.tag}</span>`:""}<span class="gtime">${g.t}</span>`;
+  const shot=el.querySelector(".shot"),img=new Image();
+  img.onload=()=>{shot.innerHTML="";shot.appendChild(img);shot.style.boxShadow=`0 0 0 2px ${ink}`;};
+  img.src=shotURL(g.who);return el;
+}
+function penEl(p){
+  const ink=TEAM[p.team].ink,el=document.createElement("div");el.className="pen";
+  el.innerHTML=`<span class="accent" style="background:${ink}"></span>
+    <span class="pwho"><div class="pname"><span class="no">${p.no?'#'+p.no:''}</span>${p.who}</div><div class="pinf">${p.inf}</div></span>
+    <span class="ppim">${p.pim}</span><span class="ptime">${p.t}</span>`;
+  return el;
+}
+function build(){
+  divider(); periodGrid();
+  const grid=document.getElementById("grid"); grid.innerHTML="";
+  const periods=PERIOD_DEFS.slice(0,CURRENT);
+  grid.style.gridTemplateColumns=`repeat(${periods.length+1}, 1fr)`;
+  const scoringCols=[];
+  periods.forEach(d=>{
+    const col=document.createElement("div");col.className="col";col.innerHTML=`<h2>${d.label}</h2>`;
+    const gs=GOALS.filter(g=>g.p===d.k);
+    if(!gs.length){const e=document.createElement("div");e.className="gast";e.style.opacity=".5";e.textContent="No goals yet";col.appendChild(e);}
+    gs.forEach(g=>col.appendChild(goalEl(g)));
+    grid.appendChild(col); scoringCols.push(col);
+  });
+  const pcol=document.createElement("div");pcol.className="col pen";pcol.innerHTML=`<h2>Penalty Summary</h2>`;
+  let anyPen=false;
+  periods.forEach(d=>{const ps=PENS.filter(p=>p.p===d.k);if(!ps.length)return;anyPen=true;
+    const sub=document.createElement("div");sub.className="psub";sub.textContent=d.label;pcol.appendChild(sub);
+    ps.forEach(p=>pcol.appendChild(penEl(p)));});
+  if(!anyPen){const e=document.createElement("div");e.className="pinf";e.style.opacity=".5";e.textContent="No penalties yet";pcol.appendChild(e);}
+  grid.appendChild(pcol);
+  // scoring columns share one size (sibling periods look consistent); penalties fill own space
+  fitCols(scoringCols, 36);
+  fitCols([pcol], 28);
+}
+function fitCols(cols, max){
+  if(!cols.length) return;
+  let lo=12, hi=max, best=12;
+  for(let i=0;i<18;i++){
+    const u=(lo+hi)/2; cols.forEach(c=>c.style.fontSize=u+"px"); cols[0].getBoundingClientRect();
+    const fits=cols.every(c=>c.scrollHeight<=c.clientHeight+0.5);
+    if(fits){best=u;lo=u;}else{hi=u;}
+  }
+  cols.forEach(c=>c.style.fontSize=best+"px");
+}
+function fitWindow(){document.getElementById("stage").style.transform="scale("+Math.min(innerWidth/1840,innerHeight/1000)+")";}
+addEventListener("resize",()=>{fitWindow();build();});
+document.getElementById("sim").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  CURRENT=+b.dataset.p;[...document.querySelectorAll("#sim button")].forEach(x=>x.classList.toggle("on",x===b));build();});
+document.querySelector('#sim button[data-p="3"]').classList.add("on");
+build(); fitWindow();
+</script>
+</body>
+</html>
