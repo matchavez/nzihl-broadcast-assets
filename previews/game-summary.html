@@ -66,6 +66,7 @@
   .gname .no{color:var(--dim);font-weight:700;margin-right:.28em;}
   .gsub{display:flex;align-items:baseline;gap:.55em;margin-top:.12em;white-space:nowrap;}
   .gast{flex:1 1 auto;min-width:0;overflow:hidden;font-size:.62em;color:var(--dim);}
+  .gast .unassist{font-style:italic;font-weight:100;}
   .gtag{flex:0 0 auto;font-weight:800;font-size:.5em;padding:.16em .5em;border-radius:.4em;letter-spacing:.04em;
     background:#33271a;color:#ffce7d;}
   .gtime{flex:0 0 auto;font-weight:800;font-size:.64em;color:var(--sub);}
@@ -222,12 +223,18 @@ function header(g){
   document.getElementById("sB").style.color=TEAM[g.home.code].ink;
   washVectors(g);
 }
+function surnameOnly(n){const w=n.trim().split(/\s+/);return w.length>1?w.slice(1).join(" "):w[0];}
+function fmtAssist(a){
+  if(a==="Unassisted") return '<span class="unassist">Unassisted</span>';
+  const parts=a.split(",").map(s=>s.trim()).filter(Boolean);
+  return parts.length>=2 ? parts.map(surnameOnly).join(", ") : a;   // two assists → surnames only
+}
 function goalEl(x){
   const ink=TEAM[x.team].ink, el=document.createElement("div"); el.className="goal";
   el.innerHTML=`<span class="accent" style="background:${ink}"></span>
     <span class="shot"><span class="ini">${ini(x.who)}</span></span>
     <span class="gmain"><div class="gname"><span class="no">#${x.no}</span><span class="nmt">${x.who}</span></div>
-      <div class="gsub"><span class="gast">${x.a}</span>${x.tag?`<span class="gtag">${x.tag}</span>`:""}<span class="gtime">${x.t}</span></div></span>`;
+      <div class="gsub"><span class="gast">${fmtAssist(x.a)}</span>${x.tag?`<span class="gtag">${x.tag}</span>`:""}<span class="gtime">${x.t}</span></div></span>`;
   const shot=el.querySelector(".shot"), img=new Image();
   img.onload=()=>{shot.innerHTML="";shot.appendChild(img);shot.style.boxShadow=`0 0 0 2px ${ink}`;};
   img.src=shotURL(x.who);
