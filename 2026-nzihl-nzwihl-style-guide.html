@@ -82,6 +82,11 @@
   .rule h4 { margin: 0 0 6px; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase; }
   .rule p { margin: 0; font-size: 13px; line-height: 1.55; color: #333; }
 
+  /* Plain (unboxed) variant — Typography and Usage read as a flowing list, no card chrome */
+  .rules.plain { column-gap: 32px; }
+  .rules.plain .rule { border: none; border-radius: 0; background: none; padding: 0; margin: 0 0 26px; }
+  .rules.plain .rule h4 { padding-bottom: 8px; border-bottom: 1px solid var(--rule); margin-bottom: 8px; }
+
   footer { margin-top: 80px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 12px; color: var(--muted); }
 
   /* ---- PDF print: front matter flows (Usage condensed); Logo Sizing one page; teams/leagues one tidy page each ---- */
@@ -97,6 +102,8 @@
     /* Usage rule cards — condensed so they pack tighter */
     .rules { column-count: 2; column-gap: 10px; }
     .rule { padding: 10px 12px; break-inside: avoid; page-break-inside: avoid; margin: 0 0 10px; }
+    .rules.plain .rule { padding: 0; margin: 0 0 10px; }
+    .rules.plain .rule h4 { padding-bottom: 4px; margin-bottom: 3px; }
     .rule h4 { font-size: 12px; margin: 0 0 4px; }
     .rule p { font-size: 10.5px; line-height: 1.38; }
 
@@ -146,7 +153,7 @@
   </header>
 
   <h2 class="section">Typography <span class="tag">Graphics Font</span></h2>
-  <div class="rules">
+  <div class="rules plain">
     <div class="rule">
       <h4>Inter</h4>
       <p><strong>Inter</strong> is the main font used across these broadcast graphics for 2026 — a clean, neutral sans with a full weight range that stays legible at distance and on small overlays. It's free to download at <a href="https://rsms.me/inter/" style="color:#b42026; font-weight:600;">rsms.me/inter</a>.</p>
@@ -162,7 +169,7 @@
   <h2 class="section">Usage <span class="tag">Cross-League Rules</span></h2>
   <div class="section-rule"></div>
 
-  <div class="rules">
+  <div class="rules plain">
     <div class="rule">
       <h4>Primary on Primary</h4>
       <p>Every team has a primary / secondary pair that is colour-safe at typical broadcast weights. When in doubt, lead with primary and use secondary for accents (jersey numbers, stat callouts, sponsor lockups).</p>
