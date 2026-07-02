@@ -76,9 +76,9 @@
   .logo-plate.on-light .plate-label { color: #888; opacity: 0.8; }
   .logo-plate.on-dark .plate-label { color: rgba(255,255,255,0.7); }
 
-  /* Usage rules */
-  .rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 12px; align-items: start; }
-  .rule { border: 1px solid var(--rule); border-radius: 6px; padding: 18px; background: #fff; }
+  /* Usage rules — masonry via CSS columns so short cards don't stretch to match tall neighbors */
+  .rules { column-width: 260px; column-gap: 16px; margin-top: 12px; }
+  .rule { border: 1px solid var(--rule); border-radius: 6px; padding: 18px; background: #fff; display: inline-block; width: 100%; break-inside: avoid; -webkit-column-break-inside: avoid; margin: 0 0 16px; }
   .rule h4 { margin: 0 0 6px; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase; }
   .rule p { margin: 0; font-size: 13px; line-height: 1.55; color: #333; }
 
@@ -95,8 +95,8 @@
     h2.section { break-before: auto; page-break-before: auto; margin: 24px 0 8px; font-size: 23px; }
     .section-rule { margin-bottom: 14px; }
     /* Usage rule cards — condensed so they pack tighter */
-    .rules { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .rule { padding: 10px 12px; break-inside: avoid; page-break-inside: avoid; }
+    .rules { column-count: 2; column-gap: 10px; }
+    .rule { padding: 10px 12px; break-inside: avoid; page-break-inside: avoid; margin: 0 0 10px; }
     .rule h4 { font-size: 12px; margin: 0 0 4px; }
     .rule p { font-size: 10.5px; line-height: 1.38; }
 
