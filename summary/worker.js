@@ -1,6 +1,7 @@
 // NZIHL Game Summary — CORS pass-through Worker (Cloudflare)
-// Fetches an nzihl/nzwihl box-score page server-side and returns it with CORS
-// headers so the static Game Summary page can read and parse it.
+// Fetches an nzihl/nzwihl box-score (and, as of 2026-07-05, season-stats)
+// page server-side and returns it with CORS headers so the static Game
+// Summary page can read and parse it.
 //
 // Deploy (no local tooling needed):
 //   1. dash.cloudflare.com → Workers & Pages → Create → Create Worker
@@ -23,8 +24,21 @@ export default {
     const target = new URL(request.url).searchParams.get("url");
     if (!target) return new Response("missing ?url", { status: 400, headers: cors });
 
-    // Only allow the two league sites — this is a box-score proxy, nothing else.
-    if (!/^https:\/\/www\.(nzihl|nzwihl)\.com\//i.test(target))
+    // Allowlist of exact endpoints this proxy will fetch on someone's behalf —
+    // intentionally narrow, not a general CORS bypass. `www.nzihl.com` /
+    // `www.nzwihl.com` is the original box-score host; box scores were later
+    // switched to scrape `admin.esportsdesk.com` instead (see the roster
+    // pipeline's equivalent switch), which this Worker was updated to allow
+    // directly on the Cloudflare dashboard but never had that change synced
+    // back to this committed copy -- that drift is why this file undersold
+    // what's actually live. `stats_1team.cfm` on the same admin host is added
+    // here for the Game Summary's season-totals lookup (2026-07-05).
+    const ALLOWED = [
+      /^https:\/\/www\.(nzihl|nzwihl)\.com\//i,
+      /^https:\/\/admin\.esportsdesk\.com\/leagues\/hockey_boxscores\.cfm\?/i,
+      /^https:\/\/admin\.esportsdesk\.com\/leagues\/stats_1team\.cfm\?/i,
+    ];
+    if (!ALLOWED.some((re) => re.test(target)))
       return new Response("forbidden", { status: 403, headers: cors });
 
     try {
