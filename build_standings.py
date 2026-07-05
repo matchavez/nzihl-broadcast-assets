@@ -16,10 +16,13 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
+from zoneinfo import ZoneInfo
 
 import requests
 from bs4 import BeautifulSoup
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
+
+NZ_TZ = ZoneInfo("Pacific/Auckland")
 
 # --- Paths -----------------------------------------------------------------
 HERE       = Path(__file__).resolve().parent
@@ -412,7 +415,9 @@ def render(cfg: LeagueConfig, teams: List[Dict], *,
 
     wordmark_x = LEFT_EDGE + league_logo.width + 40
     # Reserve room for the date stamp on the right side
-    date_str = dt.date.today().strftime("%A %d %B %Y").upper()
+    # Use NZ local date, not the Actions runner's UTC date — the runner's UTC
+    # clock is still "yesterday" whenever this fires at 02:00-03:00 NZ time.
+    date_str = dt.datetime.now(NZ_TZ).date().strftime("%A %d %B %Y").upper()
     date_w = draw.textbbox((0, 0), date_str, font=font(24, "bold"))[2]
     wordmark_max_w = RIGHT_EDGE - wordmark_x - date_w - 40
     # Pick the largest size that fits (fine 2pt steps so a long league name lands
