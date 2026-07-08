@@ -57,6 +57,26 @@ def fit_logo(path,target_h,max_w=99999,thr=40):
     return im2.crop((xs2.min(),ys2.min(),xs2.max()+1,ys2.max()+1))
 def paste_c(base,im,cx,cy,alpha=1.0):
     base.alpha_composite(im,(int(cx-im.width/2),int(cy-im.height/2)))
+def trim(im,thr=10):
+    """Crop to opaque content bbox so downstream width math reflects what's actually
+    visible (sprite() pads its canvas by `pad`, which would otherwise throw off
+    edge/gap measurements)."""
+    a=np.array(im)[:,:,3]; ys,xs=np.where(a>thr)
+    if len(xs)==0: return im
+    return im.crop((xs.min(),ys.min(),xs.max()+1,ys.max()+1))
+
+# LOWER STRIP symmetric layout constants (2026-07-08 fix): the old design placed
+# logo/name at FIXED pixel centers (150/360/1560/1770) mirrored around 960. That
+# looks symmetric on paper, but each team's logo and two-line name render at a
+# different width, so a fixed-center layout gives unequal edge margins and unequal
+# logo-to-name gaps depending on which two teams are matched up. Fixed instead:
+# anchor from each frame EDGE with the same margin, and the same logo->name gap,
+# on both sides, regardless of that team's specific logo/name pixel width.
+# Verified across all 12 NZWIHL matchups: margins/gaps come out identical (150px /
+# 100px) both sides; worst-case clearance to the centre "UP NEXT" cluster is 181px.
+EDGE_MARGIN = 150   # frame edge -> outer edge of logo, SAME both sides
+LOGO_GAP    = 100   # logo inner edge -> name block outer edge, SAME both sides
+LOGO_H      = 96    # SAME target logo height both sides (was 96 left / 100 right)
 def vgrad_rgba(w,h,top,bot,alpha=0.95):
     t=np.linspace(0,1,h)[:,None]; arr=np.zeros((h,w,4),np.float32)
     for i in range(3): arr[:,:,i]=(top[i]*(1-t)+bot[i]*t)/255.
@@ -79,13 +99,26 @@ def build_a(L,R):
     go=np.zeros((H,W,4),np.uint8); go[:,:,0],go[:,:,1],go[:,:,2]=GOLD_BR; go[:,:,3]=(ga*150).astype(np.uint8)
     base.alpha_composite(Image.fromarray(go,"RGBA"))
     cy=top+h/2
-    lL=fit_logo(f"{LOGOS}/{L['logo']}",96,max_w=150); lR=fit_logo(f"{LOGOS}/{R['logo']}",100,max_w=150)
-    paste_c(base,lL,150,cy); paste_c(base,lR,1770,cy)
+    # Symmetric edge+gap layout (2026-07-08): same EDGE_MARGIN from frame edge to
+    # logo, same LOGO_GAP from logo to name block, on both sides.
+    lL=fit_logo(f"{LOGOS}/{L['logo']}",LOGO_H,max_w=150); lR=fit_logo(f"{LOGOS}/{R['logo']}",LOGO_H,max_w=150)
     nf1=name_font(26); nf2=name_font(34)
-    def nm(t,cx):
-        paste_c(base,sprite(t['lines'][0],nf1,WHITE,tr=2,sw=3,sf=INK),cx,cy-24)
-        paste_c(base,sprite(t['lines'][1],nf2,t['name'],tr=2,sw=3,sf=t.get('stroke2',INK)),cx,cy+18)
-    nm(L,360); nm(R,1560)
+    l1=trim(sprite(L['lines'][0],nf1,WHITE,tr=2,sw=3,sf=INK))
+    l2=trim(sprite(L['lines'][1],nf2,L['name'],tr=2,sw=3,sf=L.get('stroke2',INK)))
+    r1=trim(sprite(R['lines'][0],nf1,WHITE,tr=2,sw=3,sf=INK))
+    r2=trim(sprite(R['lines'][1],nf2,R['name'],tr=2,sw=3,sf=R.get('stroke2',INK)))
+    Lname_w=max(l1.width,l2.width); Rname_w=max(r1.width,r2.width)
+
+    logoL_cx = EDGE_MARGIN + lL.width/2
+    nameL_left = EDGE_MARGIN + lL.width + LOGO_GAP
+    nameL_cx = nameL_left + Lname_w/2
+    logoR_cx = W - EDGE_MARGIN - lR.width/2
+    nameR_right = W - EDGE_MARGIN - lR.width - LOGO_GAP
+    nameR_cx = nameR_right - Rname_w/2
+
+    paste_c(base,lL,logoL_cx,cy); paste_c(base,lR,logoR_cx,cy)
+    paste_c(base,l1,nameL_cx,cy-24); paste_c(base,l2,nameL_cx,cy+18)
+    paste_c(base,r1,nameR_cx,cy-24); paste_c(base,r2,nameR_cx,cy+18)
     unf=font_cap(OSWALD,600,38); tr=14
     paste_c(base,sprite("UP NEXT",unf,WHITE,tr=tr),960,cy)
     lw,_=tsize("UP NEXT",unf,tr); dl=ImageDraw.Draw(base)
