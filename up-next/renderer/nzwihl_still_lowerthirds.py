@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""Batch-render NZWIHL still-frame Up Next overlays (A = lower strip, G = hybrid wings+banner)
+"""Batch-render NZWIHL still-frame Up Next overlays (Lower Third + Lower Third with Wings)
 for every women's matchup. Transparent 1920x1080 PNGs to drop on the countdown still."""
 import os, glob, itertools, numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
-_ROOTS=sorted(glob.glob("/sessions/*/mnt/NZIHL and NZWIHL Broadcast Assets"))
-BASE=_ROOTS[0]; SESS=BASE.split("/mnt/")[0]
-FONTS=f"{SESS}/mnt/outputs/fonts"; LOGOS=f"{BASE}/Style Guide/Team Logos"
-OUT=f"{SESS}/mnt/outputs/women_overlays"; os.makedirs(OUT,exist_ok=True)
+HERE=os.path.dirname(os.path.abspath(__file__)); REPO=os.path.abspath(os.path.join(HERE,"..",".."))
+FONTS=f"{HERE}/fonts"; LOGOS=f"{REPO}/assets/logos"
+OUT=os.environ.get("OUT_DIR", os.path.join(os.getcwd(),"out")); os.makedirs(OUT,exist_ok=True)
 INTER=f"{FONTS}/Inter[opsz,wght].ttf"; OSWALD=f"{FONTS}/Oswald[wght].ttf"
 W,H=1920,1080
 GOLD=(247,190,17); GOLD_BR=(255,205,46); WHITE=(255,255,255); INK=(8,8,10)
