@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Batch-render NZWIHL still-frame Up Next overlays (Lower Third + Lower Third with Wings)
+"""Batch-render NZWIHL still-frame Up Next overlays (A = lower strip, G = hybrid wings+banner)
 for every women's matchup. Transparent 1920x1080 PNGs to drop on the countdown still."""
 import os, glob, itertools, numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
-HERE=os.path.dirname(os.path.abspath(__file__)); REPO=os.path.abspath(os.path.join(HERE,"..",".."))
-FONTS=f"{HERE}/fonts"; LOGOS=f"{REPO}/assets/logos"
-OUT=os.environ.get("OUT_DIR", os.path.join(os.getcwd(),"out")); os.makedirs(OUT,exist_ok=True)
+_ROOTS=sorted(glob.glob("/sessions/*/mnt/NZIHL and NZWIHL Broadcast Assets"))
+BASE=_ROOTS[0]; SESS=BASE.split("/mnt/")[0]
+FONTS=f"{SESS}/mnt/outputs/fonts"; LOGOS=f"{BASE}/Style Guide/Team Logos"
+OUT=f"{SESS}/mnt/outputs/women_overlays"; os.makedirs(OUT,exist_ok=True)
 INTER=f"{FONTS}/Inter[opsz,wght].ttf"; OSWALD=f"{FONTS}/Oswald[wght].ttf"
 W,H=1920,1080
 GOLD=(247,190,17); GOLD_BR=(255,205,46); WHITE=(255,255,255); INK=(8,8,10)
@@ -65,18 +66,27 @@ def trim(im,thr=10):
     if len(xs)==0: return im
     return im.crop((xs.min(),ys.min(),xs.max()+1,ys.max()+1))
 
-# LOWER STRIP symmetric layout constants (2026-07-08 fix): the old design placed
-# logo/name at FIXED pixel centers (150/360/1560/1770) mirrored around 960. That
-# looks symmetric on paper, but each team's logo and two-line name render at a
-# different width, so a fixed-center layout gives unequal edge margins and unequal
-# logo-to-name gaps depending on which two teams are matched up. Fixed instead:
-# anchor from each frame EDGE with the same margin, and the same logo->name gap,
-# on both sides, regardless of that team's specific logo/name pixel width.
-# Verified across all 12 NZWIHL matchups: margins/gaps come out identical (150px /
-# 100px) both sides; worst-case clearance to the centre "UP NEXT" cluster is 181px.
-EDGE_MARGIN = 150   # frame edge -> outer edge of logo, SAME both sides
-LOGO_GAP    = 100   # logo inner edge -> name block outer edge, SAME both sides
-LOGO_H      = 96    # SAME target logo height both sides (was 96 left / 100 right)
+# LOWER STRIP layout (2026-07-08, second pass -- CENTRE-symmetric, matches NZIHL):
+# The previous fix anchored logo/name from each frame EDGE (equal 150px margins,
+# equal 100px logo->name gaps). That equalises the OUTER margins, but the eye
+# reads this graphic from the centre outward -- "UP NEXT" sits at 960 and the two
+# name blocks / logos are judged by their distance from it. Because each team's
+# logo+name renders at a different width, edge-anchoring pushed wider teams'
+# blocks closer to centre than narrower teams' (Steel-v-Inferno: Steel's name
+# ~47px farther from UP NEXT than Inferno's) -- visibly lopsided where it matters.
+# Now using the SAME treatment as the NZIHL heroes (overlay.py: logos ±665,
+# names ±360, both mirrored about 960): every block is CENTRED on a fixed anchor
+# mirrored about x=960, so logo centres and name-block centres are exactly
+# equidistant from centre for every matchup. Outer edge margins now vary a little
+# per team (85-127px) -- that's the correct trade-off; nobody perceives edge
+# margins, everyone perceives centre balance. Anchor maths (widest cases):
+# widest logo 150px at ±800 -> inner edge 725 from centre; widest name 261px at
+# ±555 -> spans 424.5..685.5 from centre; logo->name gap worst case ~40px
+# (Inferno, widest logo AND name), typical ~70px; name inner edge clears the
+# "UP NEXT"+dashes cluster (~±277) by >=147px. No collision risk.
+LOGO_CX_OFF = 800   # centre of each logo sits at 960 -/+ this, BOTH sides
+NAME_CX_OFF = 555   # centre of each name block sits at 960 -/+ this, BOTH sides
+LOGO_H      = 96    # SAME target logo height both sides
 def vgrad_rgba(w,h,top,bot,alpha=0.95):
     t=np.linspace(0,1,h)[:,None]; arr=np.zeros((h,w,4),np.float32)
     for i in range(3): arr[:,:,i]=(top[i]*(1-t)+bot[i]*t)/255.
@@ -99,22 +109,18 @@ def build_a(L,R):
     go=np.zeros((H,W,4),np.uint8); go[:,:,0],go[:,:,1],go[:,:,2]=GOLD_BR; go[:,:,3]=(ga*150).astype(np.uint8)
     base.alpha_composite(Image.fromarray(go,"RGBA"))
     cy=top+h/2
-    # Symmetric edge+gap layout (2026-07-08): same EDGE_MARGIN from frame edge to
-    # logo, same LOGO_GAP from logo to name block, on both sides.
+    # CENTRE-symmetric layout (2026-07-08 second pass): every block CENTRED on a
+    # fixed anchor mirrored about x=960, same as the NZIHL heroes. See constants
+    # block above for the rationale and clearance maths.
     lL=fit_logo(f"{LOGOS}/{L['logo']}",LOGO_H,max_w=150); lR=fit_logo(f"{LOGOS}/{R['logo']}",LOGO_H,max_w=150)
     nf1=name_font(26); nf2=name_font(34)
     l1=trim(sprite(L['lines'][0],nf1,WHITE,tr=2,sw=3,sf=INK))
     l2=trim(sprite(L['lines'][1],nf2,L['name'],tr=2,sw=3,sf=L.get('stroke2',INK)))
     r1=trim(sprite(R['lines'][0],nf1,WHITE,tr=2,sw=3,sf=INK))
     r2=trim(sprite(R['lines'][1],nf2,R['name'],tr=2,sw=3,sf=R.get('stroke2',INK)))
-    Lname_w=max(l1.width,l2.width); Rname_w=max(r1.width,r2.width)
 
-    logoL_cx = EDGE_MARGIN + lL.width/2
-    nameL_left = EDGE_MARGIN + lL.width + LOGO_GAP
-    nameL_cx = nameL_left + Lname_w/2
-    logoR_cx = W - EDGE_MARGIN - lR.width/2
-    nameR_right = W - EDGE_MARGIN - lR.width - LOGO_GAP
-    nameR_cx = nameR_right - Rname_w/2
+    logoL_cx = 960 - LOGO_CX_OFF; logoR_cx = 960 + LOGO_CX_OFF
+    nameL_cx = 960 - NAME_CX_OFF; nameR_cx = 960 + NAME_CX_OFF
 
     paste_c(base,lL,logoL_cx,cy); paste_c(base,lR,logoR_cx,cy)
     paste_c(base,l1,nameL_cx,cy-24); paste_c(base,l2,nameL_cx,cy+18)
