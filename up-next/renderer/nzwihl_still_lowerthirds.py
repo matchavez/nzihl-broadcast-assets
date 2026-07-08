@@ -19,7 +19,7 @@ TEAMS={
  "thunder_w":dict(token="ThunderWomen",lines=["DUNEDIN","THUNDER"],  logo="thunder-women-white.png",
     band_top=(6,52,36),   band_bot=(3,20,14),  accent=(253,173,25),  name=(253,180,42)),
  "wild":    dict(token="Wild",         lines=["WAKATIPU","WILD"],    logo="Wakatipu-wild-white.png",
-    band_top=(250,200,5), band_bot=(208,148,4),accent=(29,48,86),    name=(29,48,86)),
+    band_top=(250,200,5), band_bot=(208,148,4),accent=(29,48,86),    name=(29,48,86), stroke2=WHITE),
 }
 
 def var_font(path,size,weight,opsz=None):
@@ -84,7 +84,7 @@ def build_a(L,R):
     nf1=name_font(26); nf2=name_font(34)
     def nm(t,cx):
         paste_c(base,sprite(t['lines'][0],nf1,WHITE,tr=2,sw=3,sf=INK),cx,cy-24)
-        paste_c(base,sprite(t['lines'][1],nf2,t['name'],tr=2,sw=3,sf=INK),cx,cy+18)
+        paste_c(base,sprite(t['lines'][1],nf2,t['name'],tr=2,sw=3,sf=t.get('stroke2',INK)),cx,cy+18)
     nm(L,360); nm(R,1560)
     unf=font_cap(OSWALD,600,38); tr=14
     paste_c(base,sprite("UP NEXT",unf,WHITE,tr=tr),960,cy)
@@ -128,7 +128,7 @@ def build_g(L,R):
     cy=top+h/2; nbf1=name_font(26); nbf2=name_font(40)
     def bnm(t,cx):
         paste_c(base,sprite(t['lines'][0],nbf1,WHITE,tr=2,sw=3,sf=INK),cx,cy-24)
-        paste_c(base,sprite(t['lines'][1],nbf2,t['name'],tr=2,sw=3,sf=INK),cx,cy+18)
+        paste_c(base,sprite(t['lines'][1],nbf2,t['name'],tr=2,sw=3,sf=t.get('stroke2',INK)),cx,cy+18)
     bnm(L,360); bnm(R,1560)
     unf=font_cap(OSWALD,600,38); tr=12
     paste_c(base,sprite("COMING UP NEXT",unf,WHITE,tr=tr),960,cy)
