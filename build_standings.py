@@ -276,6 +276,9 @@ GRID      = (40, 44, 52)
 GREEN     = (96, 196, 130)
 RED_NEG   = (232, 96, 96)
 PILL_BG   = (60, 64, 74)
+LOSS_RED  = (232, 96, 96)   # L column (Mat 2026-07-11: colour-code W/OTW/OTL/L)
+OTW_YELLOW= (250, 204, 21)  # OTW column
+OTL_ORANGE= (249, 115, 22)  # OTL column
 
 
 def _centered(d, x, y, text, fnt, fill):
@@ -510,12 +513,18 @@ def render(cfg: LeagueConfig, teams: List[Dict], *,
                           font(54, "black"), ACCENT)
             else:
                 v = team[col]
+                # Mat 2026-07-11: colour-code the W/OTW/OTL/L value cells so
+                # a loss vs. an OT/SO result is legible at a glance (headers
+                # stay neutral SUB grey, same as before).
                 if col == "L":
-                    color = DIM
-                    fnt = font(42, "semibold")
+                    color = LOSS_RED
+                elif col == "OTW":
+                    color = OTW_YELLOW
+                elif col == "OTL":
+                    color = OTL_ORANGE
                 else:
                     color = FG
-                    fnt = font(42, "bold")
+                fnt = font(42, "bold")
                 _centered(draw, cx, cy, str(v), fnt, color)
 
     # --- Footer ------------------------------------------------------------
