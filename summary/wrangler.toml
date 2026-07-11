@@ -1,0 +1,26 @@
+# Deploy config for the NZIHL CORS-proxy + Player Lower Thirds control-channel
+# worker. This UPDATES THE EXISTING deployed worker in place (same name as
+# its current workers.dev subdomain) — it does not create a second worker.
+#
+# See DEPLOY.md in this same folder for the full step-by-step.
+
+name = "blue-butterfly-aa69"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# Durable Object binding — the Player Lower Thirds control channel.
+# One ControlChannel instance per team slug (idFromName(slug) in worker.js).
+[[durable_objects.bindings]]
+name = "CONTROL"
+class_name = "ControlChannel"
+
+# Required the FIRST time a Durable Object class is added to a worker —
+# tells Cloudflare "ControlChannel is a brand-new DO class, allocate SQLite-
+# backed storage for it." SQLite-backed DOs work on BOTH the Workers Free
+# and Workers Paid plans (confirmed against Cloudflare's docs 2026-07-12) —
+# no plan upgrade needed. Do not remove or renumber this on future deploys
+# once it's landed; do not change new_sqlite_classes to new_classes (that's
+# the legacy KV-backed variant and can't be converted after the fact).
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ControlChannel"]
