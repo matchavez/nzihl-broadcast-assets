@@ -55,13 +55,18 @@ read (`fired` auto-expires to `queued` once `expires_at` passes) so a missed
 `clear` can't wedge a team. Original CORS-proxy logic is untouched --
 same worker, new route.
 
-**Not deployed yet -- this is Mat's manual step**, prepared in
-`summary/DEPLOY.md` (exact `wrangler login`/`wrangler deploy` + curl
-verification commands). `wrangler.toml` (new) declares the `CONTROL` DO
-binding + migration. Until deployed, `/control/<slug>` 501s with
-`{"error":"control channel not deployed","code":"NO_DO_BINDING"}` -- both
-consumers (phone page, preflight board) handle that response gracefully
-rather than treating it as a hard failure. See Claude's
+**DEPLOYED 2026-07-12** by Mat (`wrangler deploy` from `summary/`, per
+`summary/DEPLOY.md`). Full round trip verified live immediately after:
+queue -> fire -> real player rendered on `activity-banner/?team=pure-nz-admirals`
+(real photo, real stats.json line, fact) -> auto-hid at the 10s `expires_at`
+-> self-healed to `queued` (not `idle`, confirmed) -> manual `clear` reset to
+`idle`. Box-score CORS proxy re-verified unaffected by the same deploy.
+One gotcha hit + resolved during Mat's deploy: running `wrangler` commands
+from `~` (not the `summary/` dir) caused a macOS Full-Disk-Access-related
+`.Trash` scandir error, then a "could not detect a directory containing
+static files" error (wrangler falling back to Pages-deploy detection with
+no `wrangler.toml` in cwd) -- both were just a wrong-cwd issue, resolved by
+`cd`-ing into `summary/` before running `wrangler deploy`. See Claude's
 `nzihl-player-lower-thirds` memory for the full project design.
 
 ## Sync note
