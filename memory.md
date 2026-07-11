@@ -16,7 +16,7 @@ GitHub Pages is enabled on this repo (root). Any `.html` at repo root or in a su
 - `2026-nzihl-nzwihl-style-guide.html` / `.pdf`, `2026-nzihl-nzwihl-hex-cheat-sheet.html` — brand reference docs, year-prefixed filenames on purpose (rebuild new ones each season rather than overwrite). Style guide logos are base64-embedded. PDF built via weasyprint.
 - `up-next/` — per-club "UP NEXT" animated overlay source + renderer (`up-next/renderer/`) + one-click zips (`up-next/zips/`, named `<slug>_upnext.zip`, slug = full team name lowercased, spaces→underscore). `up-next/README.md` has renderer usage notes.
 - `DVD Bounce Loops/` — per-team bouncing-logo screensaver loop, one subfolder per club (e.g. `AucklandMako/`, `DunedinThunder/`) plus `DVD Bounce Loops/zips/<slug>_dvd.zip`.
-- `summary/` — Live Game Summary graphic project workspace: `index.html` (current mock) + `worker.js` (draft Cloudflare Worker for live data, not yet deployed). This is design/dev space; the *deployed* overlay page lives in matchavez/hockey's `summary/`.
+- `summary/` — Live Game Summary graphic project workspace: `index.html` (current mock) + `worker.js` (Cloudflare Worker -- CORS proxy for live data, still not deployed as the Game Summary's data source, but now ALSO carries the Player Lower Thirds control channel, see below) + `wrangler.toml` + `DEPLOY.md`. This is design/dev space; the *deployed* overlay page lives in matchavez/hockey's `summary/`.
 - `previews/game-summary.html` — earlier/alternate preview build for the same Game Summary project.
 - `thumbs/` — portal thumbnail PNGs/GIFs (brand.png, standings.png, rosters.png, live_game_summary.png, dvd_loops.gif, up_next.png, activity_banner.png, logos.png) — these back the section cards on the matchavez/hockey portal, not consumed here.
 
@@ -41,6 +41,28 @@ GitHub Pages is enabled on this repo (root). Any `.html` at repo root or in a su
 - **matchavez/hockey** — portal + all *deployed* overlay pages; consumes this repo's PNGs via raw.githubusercontent.com, and its `summary/`/`scoringleaders/` design work often prototypes here first.
 - **matchavez/nzihl-season-data** — game-level JSON warehouse; the Game Summary worker (`summary/worker.js`) will eventually read from it.
 - **matchavez/nzihl-broadcast-rosters**, **matchavez/nzwihl-broadcast-rosters** — roster/schedule PDFs, share the same team-color/venue conventions.
+
+## Player Lower Thirds control channel (2026-07-12)
+`summary/worker.js` now also serves `/control/<team-slug>` -- a shared,
+low-latency state channel between the phone control page
+(`matchavez/hockey`'s `hockey/lowerthirds/`) and the Activity Banner overlay
+(`matchavez/hockey`'s `activity-banner/`), backed by a **Durable Object**
+(`export class ControlChannel`, SQLite-backed via `new_sqlite_classes`,
+works on the Free plan -- confirmed before building, no paid-plan surprise).
+GET reads state (no auth); POST `queue|fire|clear|interrupt` requires the
+shared `CONTROL_TOKEN` (`l3-EXleXBAfHbgn7P1qHeJ81U1K`). State self-heals on
+read (`fired` auto-expires to `queued` once `expires_at` passes) so a missed
+`clear` can't wedge a team. Original CORS-proxy logic is untouched --
+same worker, new route.
+
+**Not deployed yet -- this is Mat's manual step**, prepared in
+`summary/DEPLOY.md` (exact `wrangler login`/`wrangler deploy` + curl
+verification commands). `wrangler.toml` (new) declares the `CONTROL` DO
+binding + migration. Until deployed, `/control/<slug>` 501s with
+`{"error":"control channel not deployed","code":"NO_DO_BINDING"}` -- both
+consumers (phone page, preflight board) handle that response gracefully
+rather than treating it as a hard failure. See Claude's
+`nzihl-player-lower-thirds` memory for the full project design.
 
 ## Sync note
 memory.md and README.md should be updated together whenever this repo changes meaningfully. If they drift (a change landed but one file wasn't updated), flag it to Mat and get his go-ahead before editing/publishing the sync — don't do it silently.
