@@ -25,6 +25,8 @@
 //   Box-score proxy:  GET  /?url=<encoded nzihl/esportsdesk URL>
 //   Control channel:  GET  /control/<team-slug>
 //                      POST /control/<team-slug>  {action, token, ...}
+//   Starting lineup:   GET  /lineup/<team-slug>
+//                      POST /lineup/<team-slug>   {action, token, ...}
 
 // Shared-secret token gating CONTROL CHANNEL writes only (reads are open —
 // same trust model as the rest of this repo family: no real auth anywhere,
@@ -55,6 +57,17 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
 
     if (url.pathname.startsWith("/control/")) {
+      return handleControl(request, env, url);
+    }
+
+    // Starting Lineup persistent state (2026-07-13) — same per-team Durable
+    // Object as /control/, different storage key. Unlike the fire-once L3
+    // channel, this is durable "current starting six" state the display page
+    // (hockey/startinglineup/) reads on load + polls, and the control page
+    // (hockey/startinglineup/control/) writes slot-by-slot. Reusing the
+    // existing ControlChannel class (not a new DO) means redeploying needs
+    // NO new migration in wrangler.toml — just `wrangler deploy` again.
+    if (url.pathname.startsWith("/lineup/")) {
       return handleControl(request, env, url);
     }
 
@@ -97,9 +110,9 @@ export default {
 // CONTROL CHANNEL — routes /control/<slug> to a per-team Durable Object.
 // ============================================================
 async function handleControl(request, env, url) {
-  const parts = url.pathname.split("/").filter(Boolean); // ["control", "<slug>"]
+  const parts = url.pathname.split("/").filter(Boolean); // ["control"|"lineup", "<slug>"]
   const slug = (parts[1] || "").toLowerCase();
-  if (!slug) return json({ error: "missing team slug — use /control/<slug>" }, 400);
+  if (!slug) return json({ error: "missing team slug — use /control/<slug> or /lineup/<slug>" }, 400);
   if (!env.CONTROL) {
     // Durable Object binding not deployed yet — degrade with a clear,
     // recognisable error the phone/overlay pages can detect and show a
@@ -193,6 +206,9 @@ export class ControlChannel {
   }
 
   async fetch(request) {
+    if (new URL(request.url).pathname.startsWith("/lineup/")) {
+      return this.handleLineup(request);
+    }
     if (request.method === "GET") {
       return json(await this.readState());
     }
@@ -257,6 +273,71 @@ export class ControlChannel {
     }
 
     await this.storage.put("state", next);
+    return json(next);
+  }
+
+  // ==========================================================
+  // STARTING LINEUP (2026-07-13) — persistent per-team state under a
+  // SEPARATE storage key ("lineup"), fully independent of the fire-once
+  // L3 "state" above. Shape:
+  //   { slots: { LF|CF|RF|LD|RD|GK: {number, name, position, photo} },
+  //     updated_at: epoch_ms | null }
+  // Unset slots are simply absent. `photo` is a nzihl-player-photos
+  // manifest-relative path (or null), resolved by the control page at
+  // set time so the display page never needs the manifest.
+  //
+  // Actions (POST {action, token, ...}; reads open, writes token-gated,
+  // same trust model as the L3 channel):
+  //   "set_slot" — {slot, player}  player=null clears that slot
+  //   "set"      — {slots}         replace the whole lineup at once
+  //   "clear"    — reset to empty
+  // ==========================================================
+  async readLineup() {
+    return (await this.storage.get("lineup")) || { slots: {}, updated_at: null };
+  }
+
+  async handleLineup(request) {
+    if (request.method === "GET") {
+      return json(await this.readLineup());
+    }
+    if (request.method !== "POST") {
+      return json({ error: "method not allowed" }, 405);
+    }
+    let body;
+    try {
+      body = await request.json();
+    } catch (e) {
+      return json({ error: "invalid JSON body" }, 400);
+    }
+    const { action, token } = body || {};
+    if (token !== CONTROL_TOKEN) {
+      return json({ error: "unauthorized" }, 401);
+    }
+    const SLOTS = ["LF", "CF", "RF", "LD", "RD", "GK"];
+    const cur = await this.readLineup();
+    const now = Date.now();
+    let next;
+
+    if (action === "set_slot") {
+      if (!SLOTS.includes(body.slot)) {
+        return json({ error: "unknown slot: " + body.slot }, 400);
+      }
+      next = { slots: { ...cur.slots }, updated_at: now };
+      if (body.player) next.slots[body.slot] = body.player;
+      else delete next.slots[body.slot];
+    } else if (action === "set") {
+      const slots = {};
+      SLOTS.forEach((s) => {
+        if (body.slots && body.slots[s]) slots[s] = body.slots[s];
+      });
+      next = { slots, updated_at: now };
+    } else if (action === "clear") {
+      next = { slots: {}, updated_at: now };
+    } else {
+      return json({ error: "unknown action: " + action }, 400);
+    }
+
+    await this.storage.put("lineup", next);
     return json(next);
   }
 }

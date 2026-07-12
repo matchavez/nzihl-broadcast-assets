@@ -84,3 +84,21 @@ If anything looks wrong after deploying, the previous worker.js (CORS proxy
 only, no control channel) is in git history — `git log -- summary/worker.js`
 — redeploy that version with `wrangler deploy` to revert. The Durable Object
 class/migration doesn't need to be undone; an unused DO binding is harmless.
+
+---
+
+## 2026-07-13 — Starting Lineup endpoints added
+
+`worker.js` gained `GET/POST /lineup/<team-slug>` (persistent per-team
+starting-six state for `hockey/startinglineup/`). It reuses the existing
+`ControlChannel` Durable Object with a separate storage key, so **no new
+migration is needed** — redeploy is just:
+
+```sh
+cd nzihl-broadcast-assets/summary/   # must be IN this folder (see gotcha above)
+wrangler deploy
+```
+
+Until redeployed, `/lineup/<slug>` falls through to the box-score proxy and
+returns `missing ?url` (400) — the startinglineup pages detect this and show
+a "worker needs redeploy" notice.
