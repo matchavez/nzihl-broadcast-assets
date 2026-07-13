@@ -1,0 +1,35 @@
+{
+  "_comment": "SINGLE SOURCE OF TRUTH for NZIHL/NZWIHL player-name corrections used across every broadcast-asset repo (roster PDFs, player photo warehouse, live overlays). Edit ONLY this file -- consumers fetch it at runtime/scrape-time and fall back to a small hardcoded snapshot if the fetch fails, so a network hiccup never breaks an on-air graphic. See matchavez/hockey's nzihl_player_name_overrides memory for the full history of why each entry exists.",
+  "version": 1,
+  "updated": "2026-07-13",
+
+  "multi_word_surnames": [
+    "hayward jones",
+    "de jonge"
+  ],
+
+  "surname_text_overrides": {
+    "de jonge": "De Jonge",
+    "hayward jones": "Hayward Jones"
+  },
+
+  "team_jersey_overrides": [
+    {
+      "league": "nzwihl",
+      "team_id": 675637,
+      "jersey": "3",
+      "first": "Reagyn",
+      "last": "Shattock",
+      "note": "Canterbury Inferno -- esportsdesk stores her as 'Shattock (Niskakoski)', a maiden-name parenthetical baked into the source title attribute."
+    }
+  ],
+
+  "parenthetical_strips": [
+    {
+      "find": "Shattock\\s*\\(\\s*Niskakoski\\s*\\)",
+      "flags": "gi",
+      "replace": "Shattock",
+      "note": "Strip Reagyn Shattock's maiden-name parenthetical from any raw scraped text before parsing (goal/assist/penalty rows, title attributes, etc.)."
+    }
+  ]
+}
