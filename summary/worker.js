@@ -86,6 +86,17 @@ export default {
       /^https:\/\/admin\.esportsdesk\.com\/leagues\/hockey_boxscores\.cfm\?/i,
       /^https:\/\/admin\.esportsdesk\.com\/leagues\/stats_1team\.cfm\?/i,
       /^https:\/\/admin\.esportsdesk\.com\/leagues\/standings\.cfm\?/i,
+      // 2026-07-13 (playoff-readiness audit): schedules.cfm and stats_hockey.cfm were
+      // NEVER on this allowlist, so every client-side fetch through the worker for
+      // them has always 403'd with this Worker's own "forbidden" response (not an
+      // esportsdesk-side failure) -- caught live via hockey/preflight/'s "NZIHL/NZWIHL
+      // leaders"+"schedule" system cards (permanently red FAILED) and the club board's
+      // FINAL-status chip (silently never populating, caught by an empty catch{}).
+      // stats_hockey.cfm also backs the league-wide scoring-rank descriptor noted as a
+      // "v1 simplification" in the Scoring Leaders project. Added here; needs a
+      // `wrangler deploy` from summary/ to actually take effect (see DEPLOY.md).
+      /^https:\/\/admin\.esportsdesk\.com\/leagues\/schedules\.cfm\?/i,
+      /^https:\/\/admin\.esportsdesk\.com\/leagues\/stats_hockey\.cfm\?/i,
     ];
     if (!ALLOWED.some((re) => re.test(target)))
       return new Response("forbidden", { status: 403, headers: CORS });
