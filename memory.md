@@ -69,5 +69,20 @@ no `wrangler.toml` in cwd) -- both were just a wrong-cwd issue, resolved by
 `cd`-ing into `summary/` before running `wrangler deploy`. See Claude's
 `nzihl-player-lower-thirds` memory for the full project design.
 
+## Playoff-readiness audit (2026-07-13)
+See `matchavez/hockey`'s `playoff-readiness.md` for the full cross-repo audit. Changes made here:
+
+- **`summary/worker.js` CORS allowlist bug found + fixed**: `schedules.cfm` and
+  `stats_hockey.cfm` were never in `ALLOWED` -- every client-side fetch through the worker for
+  them has always 403'd with the worker's OWN `"forbidden"` response, not an esportsdesk-side
+  failure. This is why `matchavez/hockey/preflight/`'s "leaders"/"schedule" reachability cards and
+  the club board's FINAL-status chip have silently never worked. Both endpoints added to
+  `ALLOWED`. **Needs Mat: `wrangler deploy` from `summary/`** to take effect -- no
+  `wrangler.toml`/migration change needed, same mechanism as the existing `DEPLOY.md`.
+- **`.github/workflows/force-pages-build.yml`** (new): POSTs `/pages/builds` on every push to
+  main, since this repo also serves GitHub Pages (the Style Guide, standings PNGs via raw content,
+  etc.) via the legacy builder that doesn't always auto-build on push. Verified green via the
+  Actions API.
+
 ## Sync note
 memory.md and README.md should be updated together whenever this repo changes meaningfully. If they drift (a change landed but one file wasn't updated), flag it to Mat and get his go-ahead before editing/publishing the sync — don't do it silently.
