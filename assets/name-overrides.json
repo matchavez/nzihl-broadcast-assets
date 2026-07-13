@@ -21,6 +21,14 @@
       "first": "Reagyn",
       "last": "Shattock",
       "note": "Canterbury Inferno -- esportsdesk stores her as 'Shattock (Niskakoski)', a maiden-name parenthetical baked into the source title attribute."
+    },
+    {
+      "league": "nzihl",
+      "team_id": 674110,
+      "jersey": "26",
+      "first": null,
+      "last": "De Jonge",
+      "note": "Pure NZ Admirals -- belt-and-suspenders exact override on top of the multi_word_surnames allowlist entry above (which already keeps 'De Jonge' whole on its own). first=null means don't touch the first name."
     }
   ],
 
