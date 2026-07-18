@@ -1,7 +1,7 @@
 {
   "_comment": "SINGLE SOURCE OF TRUTH for NZIHL/NZWIHL player-name corrections used across every broadcast-asset repo (roster PDFs, player photo warehouse, live overlays). Edit ONLY this file -- consumers fetch it at runtime/scrape-time and fall back to a small hardcoded snapshot if the fetch fails, so a network hiccup never breaks an on-air graphic. See matchavez/hockey's nzihl_player_name_overrides memory for the full history of why each entry exists.",
   "version": 1,
-  "updated": "2026-07-13",
+  "updated": "2026-07-19",
 
   "multi_word_surnames": [
     "hayward jones",
@@ -10,7 +10,9 @@
 
   "surname_text_overrides": {
     "de jonge": "De Jonge",
-    "hayward jones": "Hayward Jones"
+    "hayward jones": "Hayward Jones",
+    "lucy-jane hart": "LJ Hart",
+    "lucia eccleton-allen": "Lucy Eccleton-Allen"
   },
 
   "team_jersey_overrides": [
@@ -38,6 +40,18 @@
       "flags": "gi",
       "replace": "Shattock",
       "note": "Strip Reagyn Shattock's maiden-name parenthetical from any raw scraped text before parsing (goal/assist/penalty rows, title attributes, etc.)."
+    },
+    {
+      "find": "Lucy-Jane\\s*\\(\\s*LJ\\s*\\)\\s*Hart",
+      "flags": "gi",
+      "replace": "Lucy-Jane Hart",
+      "note": "Player goes by LJ -- esportsdesk stores her as 'Lucy-Jane(LJ) Hart', a nickname parenthetical embedded IN the name (not a trailing maiden-name case like Shattock). Left unstripped, the embedded '(' was mistaken for the assist-list open-paren by the goal/assist row regex, garbling the assist field (flagged 2026-07-18, unfixed until now). Strip cleans the raw name to 'Lucy-Jane Hart' before parsing; surname_text_overrides then forces the short display to 'LJ Hart'."
+    },
+    {
+      "find": "Lucia\\s*\\(\\s*Lucy\\s*\\)\\s*Eccleton-Allen",
+      "flags": "gi",
+      "replace": "Lucia Eccleton-Allen",
+      "note": "Player goes by Lucy -- esportsdesk stores her as 'Lucia (Lucy) Eccleton-Allen', same embedded-nickname-parenthetical pattern as LJ Hart above. Strip cleans the raw name to 'Lucia Eccleton-Allen' before parsing; surname_text_overrides then forces the short display to 'Lucy Eccleton-Allen'."
     }
   ]
 }
