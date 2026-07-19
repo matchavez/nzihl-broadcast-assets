@@ -52,6 +52,28 @@ function json(obj, status) {
 
 export default {
   async fetch(request, env) {
+    // 2026-07-20 resilience pass (see matchavez/hockey's nzihl_resilience_audit_2026_07_20
+    // memory / the estate-wide audit this is a continuation of): every routing branch below
+    // used to have NO top-level safety net. Any uncaught exception anywhere in this handler
+    // -- a routing bug, an unexpected env shape, anything inside the Durable Object -- fell
+    // straight through to Cloudflare's own generic error page: no CORS headers, not JSON,
+    // nothing the client's error handling (which expects a normal HTTP error response) was
+    // built to parse. A browser fetch() against that looks like an opaque "Failed to fetch"
+    // with zero diagnostic value client-side. Wrap everything so a bug in this Worker degrades
+    // to a clean, recognisable, CORS-safe error instead of an unrecoverable opaque failure.
+    try {
+      return await routeRequest(request, env);
+    } catch (e) {
+      console.error("[worker] unhandled exception:", e && e.stack || e);
+      return new Response("worker internal error: " + (e && e.message || e), {
+        status: 500,
+        headers: CORS,
+      });
+    }
+  },
+};
+
+async function routeRequest(request, env) {
     const url = new URL(request.url);
 
     if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
@@ -101,10 +123,18 @@ export default {
     if (!ALLOWED.some((re) => re.test(target)))
       return new Response("forbidden", { status: 403, headers: CORS });
 
+    // 2026-07-20: this fetch had no timeout at all -- if admin.esportsdesk.com hangs instead
+    // of erroring, the old code just hangs too, for however long the platform lets it, tying
+    // up this Worker invocation and leaving the client waiting far longer than its own 8s
+    // client-side abort should ever need to cover. Fail fast and clean instead.
+    const UPSTREAM_TIMEOUT_MS = 10000;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), UPSTREAM_TIMEOUT_MS);
     try {
       const upstream = await fetch(target, {
         headers: { "User-Agent": "Mozilla/5.0 (NZIHL Broadcast Game Summary)" },
         cf: { cacheTtl: 0, cacheEverything: false },
+        signal: ctrl.signal,
       });
       const body = await upstream.text();
       return new Response(body, {
@@ -112,10 +142,13 @@ export default {
         headers: { ...CORS, "Content-Type": "text/html; charset=utf-8" },
       });
     } catch (e) {
-      return new Response("upstream error: " + e, { status: 502, headers: CORS });
+      const timedOut = e && e.name === "AbortError";
+      return new Response((timedOut ? "upstream timeout after " + UPSTREAM_TIMEOUT_MS + "ms: " : "upstream error: ") + target,
+        { status: timedOut ? 504 : 502, headers: CORS });
+    } finally {
+      clearTimeout(t);
     }
-  },
-};
+}
 
 // ============================================================
 // CONTROL CHANNEL — routes /control/<slug> to a per-team Durable Object.
@@ -130,14 +163,24 @@ async function handleControl(request, env, url) {
     // "worker not deployed yet" notice for, per the brief.
     return json({ error: "control channel not deployed", code: "NO_DO_BINDING" }, 501);
   }
-  const id = env.CONTROL.idFromName(slug);
-  const stub = env.CONTROL.get(id);
-  const doResp = await stub.fetch(request);
-  const body = await doResp.text();
-  return new Response(body, {
-    status: doResp.status,
-    headers: { ...CORS, "Content-Type": "application/json; charset=utf-8" },
-  });
+  // 2026-07-20: this call had zero error handling -- any exception thrown inside the
+  // Durable Object (a storage hiccup, an edge case in state handling, anything) propagated
+  // straight out uncaught, breaking CORS and the JSON contract the phone/overlay pages expect.
+  // Both Player L3 (pollControl(), every 750ms on 2 live overlay pages) and Starting Lineup
+  // route through here, so this single try/catch is the highest-leverage fix in this file.
+  try {
+    const id = env.CONTROL.idFromName(slug);
+    const stub = env.CONTROL.get(id);
+    const doResp = await stub.fetch(request);
+    const body = await doResp.text();
+    return new Response(body, {
+      status: doResp.status,
+      headers: { ...CORS, "Content-Type": "application/json; charset=utf-8" },
+    });
+  } catch (e) {
+    console.error("[worker] control channel error for slug \"" + slug + "\":", e && e.stack || e);
+    return json({ error: "control channel error: " + (e && e.message || e), code: "DO_ERROR" }, 502);
+  }
 }
 
 // ============================================================
