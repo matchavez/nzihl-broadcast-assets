@@ -84,5 +84,24 @@ See `matchavez/hockey`'s `playoff-readiness.md` for the full cross-repo audit. C
   etc.) via the legacy builder that doesn't always auto-build on push. Verified green via the
   Actions API.
 
+## Pronunciation-guide system (2026-07-27)
+New `assets/pronunciations.json` -- single source of truth for player/coach phonetics and
+preferred announced names (e.g. Csaba Kercso-Magos -> "Chabba"), same single-file-of-record
+convention as `assets/name-overrides.json`. Keyed by esportsdesk `player_id` (players, now
+also carried on `nzihl-broadcast-rosters`/`nzwihl-broadcast-rosters`'s `stats.json` for
+exactly this reason) or the photo-warehouse manifest's synthetic
+`league:TLA:coach:First|Last|Title` key (coaches). Seeded with a rule-based baseline for
+every player + coach across both leagues, hand-verified for ~48 non-English/deceptive-
+spelling names by Claude. Drives a one-page-per-team PDF sheet (logo/name banner -> venue +
+coaches -> photo-card grid, GP>0 filter with a full-roster fallback for preseason builds
+where nobody has GP yet) delivered directly to Mat's project folder, plus a combined
+10-team booklet and an offline `pronunciation_review.html` (no backend -- Mat edits inline,
+exports an updated JSON, drops it back in here). MKO (Auckland Mako) is registered with its
+real locked-in brand colors from the hex cheat sheet but no team_id/logo/venue -- they
+aren't fielding a team; the renderer shows a placeholder page rather than fabricating data.
+Each per-player card links out to that player's `rosters_profile.cfm` full-stats page
+(`www.nzihl.com`/`www.nzwihl.com`, clientid/leagueID/teamID/playerID -- all already known
+constants from the roster scrapers).
+
 ## Sync note
 memory.md and README.md should be updated together whenever this repo changes meaningfully. If they drift (a change landed but one file wasn't updated), flag it to Mat and get his go-ahead before editing/publishing the sync — don't do it silently.
