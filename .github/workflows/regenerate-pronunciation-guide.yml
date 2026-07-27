@@ -1,0 +1,91 @@
+name: Regenerate Pronunciation Guide PDFs
+
+# Triggered by the "Regenerate PDFs" button on the ops review page
+# (matchavez.com/hockey/ops/pronunciation-review/), which calls a
+# Cloudflare Worker route that holds a token and dispatches this workflow
+# server-side -- the page itself never sees a GitHub credential. Can also
+# be run manually from the Actions tab.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: pronunciation-guide-regen
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r pronunciation-guide/requirements.txt pypdf
+
+      - name: Fetch player photos (public repo)
+        run: git clone --depth 1 https://github.com/matchavez/nzihl-player-photos.git _photos
+
+      - name: Fetch stats + standings data (all public)
+        run: |
+          mkdir -p _data
+          curl -sf -o _data/nzihl_stats.json   https://raw.githubusercontent.com/matchavez/nzihl-broadcast-rosters/main/stats.json
+          curl -sf -o _data/nzwihl_stats.json  https://raw.githubusercontent.com/matchavez/nzwihl-broadcast-rosters/main/stats.json
+          curl -sf -o _data/photo_manifest.json https://raw.githubusercontent.com/matchavez/nzihl-player-photos/main/manifest.json
+          curl -sf -o _data/nzihl_season.json  https://raw.githubusercontent.com/matchavez/nzihl-season-data/main/nzihl.json
+          curl -sf -o _data/nzwihl_season.json https://raw.githubusercontent.com/matchavez/nzihl-season-data/main/nzwihl.json
+
+      - name: Build the 10 team sheets
+        working-directory: pronunciation-guide
+        env:
+          PRONUNCIATION_DATA_DIR: ${{ github.workspace }}/_data
+          PRONUNCIATION_PHOTOS_ROOT: ${{ github.workspace }}/_photos
+          PRONUNCIATION_OUT_DIR: ${{ github.workspace }}/pronunciation-guide/output
+        run: python generate_all.py
+
+      - name: Build the combined booklet
+        working-directory: pronunciation-guide
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from pypdf import PdfWriter, PdfReader
+
+          out_dir = Path("output")
+          order = ["ADM", "BSW", "CRD", "DUN", "SCS", "MKO", "AST", "CIN", "DTW", "WLD"]
+          writer = PdfWriter()
+          for tla in order:
+              matches = list(out_dir.glob(f"{tla}_*_pronunciation.pdf"))
+              if not matches:
+                  continue
+              reader = PdfReader(matches[0])
+              for page in reader.pages:
+                  writer.add_page(page)
+          combined = out_dir / "NZIHL_NZWIHL_Pronunciation_Guide_ALL_TEAMS.pdf"
+          with open(combined, "wb") as f:
+              writer.write(f)
+          print("booklet pages:", len(writer.pages))
+          PY
+
+      - name: Commit + push regenerated PDFs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pronunciation-guide/output
+          git diff --cached --quiet && echo "No changes to commit" || git commit -m "pronunciation-guide: automated regeneration [skip ci]"
+          git push
+
+      - name: Force a Pages rebuild
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -sf -X POST -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/pages/builds
