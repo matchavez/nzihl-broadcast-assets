@@ -36,6 +36,16 @@
 // hockey/activity-banner/ (overlay) embed this exact same string.
 const CONTROL_TOKEN = "l3-EXleXBAfHbgn7P1qHeJ81U1K";
 
+// Shared-secret token gating the pronunciation-guide regenerate button
+// (matchavez.com/hockey/ops/pronunciation-review/) -- same "deter casual
+// abuse, not real security" trust model as CONTROL_TOKEN above. The real
+// credential (a GitHub token that can actually dispatch the Actions
+// workflow) lives ONLY as a Cloudflare secret (env.GITHUB_TOKEN, set via
+// `wrangler secret put GITHUB_TOKEN` -- never in source, never sent to the
+// browser). This constant just stops a random visitor from spamming the
+// endpoint; it does not protect the GitHub token itself.
+const REGEN_TOKEN = "pg-regen-7hUqQz3vNcM9wTk2";
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -77,6 +87,15 @@ async function routeRequest(request, env) {
     const url = new URL(request.url);
 
     if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
+
+    // Pronunciation-guide regenerate button (2026-07-28). POST only, body
+    // {token}. Dispatches the "Regenerate Pronunciation Guide PDFs" Actions
+    // workflow in nzihl-broadcast-assets server-side -- the review page
+    // itself never touches a GitHub credential, only this shared deterrent
+    // token. See REGEN_TOKEN's comment above for the trust model.
+    if (url.pathname === "/pronunciation-guide/regenerate" && request.method === "POST") {
+      return handleRegenerate(request, env);
+    }
 
     if (url.pathname.startsWith("/control/")) {
       return handleControl(request, env, url);
@@ -153,6 +172,50 @@ async function routeRequest(request, env) {
 // ============================================================
 // CONTROL CHANNEL — routes /control/<slug> to a per-team Durable Object.
 // ============================================================
+async function handleRegenerate(request, env) {
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return json({ ok: false, error: "expected a JSON body with a token" }, 400);
+  }
+
+  if (body.token !== REGEN_TOKEN) {
+    return json({ ok: false, error: "bad token" }, 403);
+  }
+
+  if (!env.GITHUB_TOKEN) {
+    // Fails loudly and clearly rather than silently doing nothing -- this
+    // means `wrangler secret put GITHUB_TOKEN` hasn't been run yet on this
+    // Worker deployment.
+    return json({ ok: false, error: "GITHUB_TOKEN secret not configured on this Worker" }, 500);
+  }
+
+  const dispatchResp = await fetch(
+    "https://api.github.com/repos/matchavez/nzihl-broadcast-assets/actions/workflows/regenerate-pronunciation-guide.yml/dispatches",
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `token ${env.GITHUB_TOKEN}`,
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "nzihl-pronunciation-guide-worker",
+      },
+      body: JSON.stringify({ ref: "main" }),
+    }
+  );
+
+  if (dispatchResp.status !== 204) {
+    const text = await dispatchResp.text().catch(() => "");
+    return json({ ok: false, error: `GitHub API returned ${dispatchResp.status}: ${text}` }, 502);
+  }
+
+  return json({
+    ok: true,
+    message: "Regeneration started. Usually takes 1-2 minutes -- check the Actions tab or just refresh in a bit.",
+    runsUrl: "https://github.com/matchavez/nzihl-broadcast-assets/actions/workflows/regenerate-pronunciation-guide.yml",
+  });
+}
+
 async function handleControl(request, env, url) {
   const parts = url.pathname.split("/").filter(Boolean); // ["control"|"lineup", "<slug>"]
   const slug = (parts[1] || "").toLowerCase();

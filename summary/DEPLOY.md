@@ -102,3 +102,48 @@ wrangler deploy
 Until redeployed, `/lineup/<slug>` falls through to the box-score proxy and
 returns `missing ?url` (400) — the startinglineup pages detect this and show
 a "worker needs redeploy" notice.
+
+---
+
+## 2026-07-28 — Pronunciation Guide "Regenerate" button
+
+`worker.js` gained `POST /pronunciation-guide/regenerate`, called by the
+button on `matchavez.com/hockey/ops/pronunciation-review/`. It dispatches
+the `regenerate-pronunciation-guide.yml` Actions workflow in this same repo
+using a GitHub token held **only** as a Worker secret -- the review page
+itself never sees a GitHub credential, only a low-stakes shared string
+(`REGEN_TOKEN` in `worker.js`) that just deters randoms from spamming the
+button, same trust model as `CONTROL_TOKEN` elsewhere in this file.
+
+**This needs one new secret before it'll work — nothing else does.**
+
+```sh
+cd nzihl-broadcast-assets/summary/   # must be IN this folder
+git pull                             # make sure you're deploying the code you think you are
+wrangler secret put GITHUB_TOKEN
+```
+When prompted, paste a GitHub token that can dispatch workflows in this
+repo. Simplest option: reuse your existing classic PAT (the one already
+stored for git push access) -- it's never sent to the browser, only used
+server-side inside the Worker, which is a much safer place for it than the
+git-push use it already has. If you'd rather scope it down: a fine-grained
+PAT limited to just this repo with "Actions: Read and write" permission
+works too and is the tighter option.
+
+Then:
+```sh
+wrangler deploy
+```
+
+Verify:
+```sh
+curl -X POST https://blue-butterfly-aa69.matchavez.workers.dev/pronunciation-guide/regenerate \
+  -H "Content-Type: application/json" \
+  -d '{"token":"pg-regen-7hUqQz3vNcM9wTk2"}'
+```
+Expect `{"ok":true,"message":"Regeneration started...","runsUrl":"..."}`.
+If you get `{"ok":false,"error":"GITHUB_TOKEN secret not configured..."}`,
+the `wrangler secret put` step above didn't take -- re-run it.
+
+Until this secret is set, clicking the button on the review page will show
+a clear "not configured yet" message rather than failing silently.
