@@ -47,7 +47,7 @@ class TeamMeta:
 # Thunder Women and Wakatipu Wild in 2020.
 FOUNDED: dict[str, int] = {
     "ADM": 2005, "BSW": 2005, "CRD": 2005, "SCS": 2005, "DUN": 2008, "MKO": 2021,
-    "AST": 2014, "CIN": 2014, "DTW": 2020, "WLD": 2020,
+    "AST": 2014, "INF": 2014, "DTW": 2020, "WLD": 2020,
 }
 
 # Also researched 2026-07-28 (Wikipedia / venue sites), keyed by venue since
@@ -97,7 +97,7 @@ BIRGEL_CUP: dict[str, list[int]] = {
 # guessed.
 GOULDING_CUP: dict[str, list[int]] = {
     "AST": [2014, 2016, 2017, 2019, 2023, 2024, 2025],
-    "CIN": [2015],
+    "INF": [2015],
     "DTW": [],
     "WLD": [2022],
 }
@@ -129,9 +129,9 @@ TEAMS: dict[str, TeamMeta] = {
     "AST": TeamMeta("nzwihl", "AST", "Auckland Steel", 675636,
                      "#1A2A44", "#8A9BB0", "#FFFFFF", "#1A2A44",
                      "Paradice Avondale", "ast.png", True, FOUNDED["AST"]),
-    "CIN": TeamMeta("nzwihl", "CIN", "Canterbury Inferno", 675637,
+    "INF": TeamMeta("nzwihl", "INF", "Canterbury Inferno", 675637,
                      "#B00020", "#FF6A13", "#FFFFFF", "#B00020",
-                     "Alpine Ice Centre", "cin.png", True, FOUNDED["CIN"],
+                     "Alpine Ice Centre", "inf.png", True, FOUNDED["INF"],
                      jersey_text_hex="#FFFFFF"),
     "DTW": TeamMeta("nzwihl", "DTW", "Dunedin Thunder Women", 675638,
                      "#025B3D", "#FDAD19", "#FDAD19", "#025B3D",

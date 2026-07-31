@@ -59,7 +59,7 @@ jobs:
           from pypdf import PdfWriter, PdfReader
 
           out_dir = Path("output")
-          order = ["ADM", "BSW", "CRD", "DUN", "SCS", "MKO", "AST", "CIN", "DTW", "WLD"]
+          order = ["ADM", "BSW", "CRD", "DUN", "SCS", "MKO", "AST", "INF", "DTW", "WLD"]
           writer = PdfWriter()
           for tla in order:
               matches = list(out_dir.glob(f"{tla}_*_pronunciation.pdf"))
