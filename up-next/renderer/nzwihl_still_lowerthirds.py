@@ -16,7 +16,13 @@ TEAMS={
     band_top=(22,36,60),  band_bot=(8,14,26),  accent=(150,166,188), name=(178,192,210)),
  "inferno": dict(token="Inferno",      lines=["CANTERBURY","INFERNO"],logo="Inferno-White.png",
     band_top=(104,8,22),  band_bot=(34,2,8),   accent=(255,179,71),  name=(255,186,92)),
- "thunder_w":dict(token="ThunderWomen",lines=["DUNEDIN","THUNDER"],  logo="thunder-women-white.png",
+ "thunder_w":dict(token="ThunderWomen",lines=["DUNEDIN","THUNDER WOMEN"],  logo="thunder-women-white.png",
+    # name2_cap: build_a's lower-strip layout centres the line-2 name block only 245px
+    # from the logo edge (thunder_w on the strip's inner side); "THUNDER WOMEN" at the
+    # shared default cap(34) runs ~440px wide and collides with the logo by ~30px.
+    # Capping this team's line 2 to 26 (matches line 1's size) keeps a ~17px clearance.
+    # Verified 2026-08-01 against fit_logo/trim output, not eyeballed.
+    name2_cap=26,
     band_top=(6,52,36),   band_bot=(3,20,14),  accent=(253,173,25),  name=(253,180,42)),
  "wild":    dict(token="Wild",         lines=["WAKATIPU","WILD"],    logo="Wakatipu-wild-white.png",
     band_top=(250,200,5), band_bot=(208,148,4),accent=(29,48,86),    name=(29,48,86), stroke2=WHITE),
@@ -112,11 +118,15 @@ def build_a(L,R):
     # fixed anchor mirrored about x=960, same as the NZIHL heroes. See constants
     # block above for the rationale and clearance maths.
     lL=fit_logo(f"{LOGOS}/{L['logo']}",LOGO_H,max_w=150); lR=fit_logo(f"{LOGOS}/{R['logo']}",LOGO_H,max_w=150)
-    nf1=name_font(26); nf2=name_font(34)
+    nf1=name_font(26)
+    # Per-side line-2 font: most teams share the default cap(34); a team can override
+    # via name2_cap when its line-2 text is long enough to need a smaller size to clear
+    # the logo (see thunder_w's note in TEAMS above).
+    nf2L=name_font(L.get('name2_cap',34)); nf2R=name_font(R.get('name2_cap',34))
     l1=trim(sprite(L['lines'][0],nf1,WHITE,tr=2,sw=3,sf=INK))
-    l2=trim(sprite(L['lines'][1],nf2,L['name'],tr=2,sw=3,sf=L.get('stroke2',INK)))
+    l2=trim(sprite(L['lines'][1],nf2L,L['name'],tr=2,sw=3,sf=L.get('stroke2',INK)))
     r1=trim(sprite(R['lines'][0],nf1,WHITE,tr=2,sw=3,sf=INK))
-    r2=trim(sprite(R['lines'][1],nf2,R['name'],tr=2,sw=3,sf=R.get('stroke2',INK)))
+    r2=trim(sprite(R['lines'][1],nf2R,R['name'],tr=2,sw=3,sf=R.get('stroke2',INK)))
 
     logoL_cx = 960 - LOGO_CX_OFF; logoR_cx = 960 + LOGO_CX_OFF
     nameL_cx = 960 - NAME_CX_OFF; nameR_cx = 960 + NAME_CX_OFF

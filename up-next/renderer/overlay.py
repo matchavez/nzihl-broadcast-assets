@@ -62,7 +62,15 @@ TEAMS = {
     band_top=(22,36,60),  band_bot=(8,14,26),  accent=(150,166,188), name=(178,192,210)),
  "inferno":    dict(token="Inferno", lines=["CANTERBURY","INFERNO"], logo="Inferno-White.png", h=178,
     band_top=(104,8,22),  band_bot=(34,2,8),   accent=(255,179,71),  name=(255,186,92)),
- "thunder_w":  dict(token="ThunderWomen", lines=["DUNEDIN","THUNDER"], logo="thunder-women-white.png", h=182, logo_h=161, logo_dy=-4,
+ "thunder_w":  dict(token="ThunderWomen", lines=["DUNEDIN","THUNDER WOMEN"], logo="thunder-women-white.png", h=182, logo_h=161, logo_dy=-4,
+    # name_cap=30 (default NAME_CAP is 39, shared by both lines here): "THUNDER WOMEN"
+    # at 39 runs wide enough to collide with the logo at this layout's name-block
+    # anchor (NAMEL_CX=600 vs logo right edge ~390). 30 clears it by ~13px. NOTE: this
+    # hero/full-frame renderer isn't currently used for any shipped NZWIHL asset (women
+    # ship from nzwihl_still_lowerthirds.py only) -- fixed for correctness in case it's
+    # revived, not verified against a real render. Re-check the collision math above
+    # before regenerating anything from this file for thunder_w.
+    name_cap=30,
     band_top=(6,52,36),   band_bot=(3,20,14),  accent=(253,173,25),  name=(253,180,42)),
  "wild":       dict(token="Wild", lines=["WAKATIPU","WILD"], logo="Wakatipu-wild-white.png", h=182,
     band_top=(250,200,5), band_bot=(208,148,4), accent=(29,48,86), name=(29,48,86), stroke2=(255,255,255)),
@@ -213,6 +221,10 @@ def _load_sized(path,weight,opsz,cap_px):
         return f
     f=mk(80); b=f.getbbox("H"); ch=max(1,b[3]-b[1]); return mk(max(8,int(round(80*cap_px/ch))))
 f_name = _load_sized(NAME_FONT,NAME_WEIGHT,NAME_OPSZ,NAME_CAP)
+# Per-team override (see LEFT/RIGHT['name_cap']) for teams whose name text is long
+# enough to need a smaller size to clear the logo at this layout's anchors.
+f_name_L = _load_sized(NAME_FONT,NAME_WEIGHT,NAME_OPSZ,LEFT.get('name_cap',NAME_CAP))
+f_name_R = _load_sized(NAME_FONT,NAME_WEIGHT,NAME_OPSZ,RIGHT.get('name_cap',NAME_CAP))
 
 left_logo  = fit_logo_uniform(f"{LOGOS}/{LEFT['logo']}",  target_h=LEFT.get('logo_h'),  logo_dx=LEFT.get('logo_dx',0),  logo_dy=LEFT.get('logo_dy',0))
 right_logo = fit_logo_uniform(f"{LOGOS}/{RIGHT['logo']}", target_h=RIGHT.get('logo_h'), logo_dx=RIGHT.get('logo_dx',0), logo_dy=RIGHT.get('logo_dy',0))
@@ -298,10 +310,10 @@ seam_glow=build_seam_glow()
 
 sp_upnext   = make_text_sprite(TOP_LABEL,f_upnext,WHITE,tracking=12)
 sp_upnext_g = make_glow(sp_upnext,(240,38,38),blur=16,gain=1.9)
-sp_L1=make_text_sprite(LEFT['lines'][0], f_name,LEFT.get('name1',WHITE),  tracking=2,stroke_w=3,stroke_fill=LEFT.get('stroke',INK))
-sp_L2=make_text_sprite(LEFT['lines'][1], f_name,LEFT['name'], tracking=2,stroke_w=3,stroke_fill=LEFT.get('stroke2',LEFT.get('stroke',INK)))
-sp_R1=make_text_sprite(RIGHT['lines'][0],f_name,RIGHT.get('name1',WHITE), tracking=2,stroke_w=3,stroke_fill=RIGHT.get('stroke',INK))
-sp_R2=make_text_sprite(RIGHT['lines'][1],f_name,RIGHT['name'],tracking=2,stroke_w=3,stroke_fill=RIGHT.get('stroke2',RIGHT.get('stroke',INK)))
+sp_L1=make_text_sprite(LEFT['lines'][0], f_name_L,LEFT.get('name1',WHITE),  tracking=2,stroke_w=3,stroke_fill=LEFT.get('stroke',INK))
+sp_L2=make_text_sprite(LEFT['lines'][1], f_name_L,LEFT['name'], tracking=2,stroke_w=3,stroke_fill=LEFT.get('stroke2',LEFT.get('stroke',INK)))
+sp_R1=make_text_sprite(RIGHT['lines'][0],f_name_R,RIGHT.get('name1',WHITE), tracking=2,stroke_w=3,stroke_fill=RIGHT.get('stroke',INK))
+sp_R2=make_text_sprite(RIGHT['lines'][1],f_name_R,RIGHT['name'],tracking=2,stroke_w=3,stroke_fill=RIGHT.get('stroke2',RIGHT.get('stroke',INK)))
 cen_glow=make_glow(cen_logo,WHITE,blur=18,gain=1.3)
 
 TOP_BASE_A=to_arr(top_base); BOT_L_A=to_arr(bot_L); BOT_R_A=to_arr(bot_R); SEAM_A=to_arr(seam_glow)
