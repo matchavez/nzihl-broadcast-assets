@@ -88,7 +88,7 @@
 <script>
 // ---- config ------------------------------------------------------------
 // CORS shim in front of nzihl. Paste your deployed Cloudflare Worker URL here (see worker.js).
-const WORKER = "";   // e.g. "https://nzihl-box.YOURNAME.workers.dev"
+const WORKER = "https://blue-butterfly-aa69.matchavez.workers.dev";
 const SHIM = u => WORKER ? (WORKER.replace(/\/$/,"") + "?url=" + encodeURIComponent(u)) : null;
 const MANIFESTS = [
   {league:"nzihl",  url:"https://raw.githubusercontent.com/matchavez/nzihl-broadcast-rosters/main/boxscores.json",  clientid:7131, leagueid:35499},
