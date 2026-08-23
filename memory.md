@@ -1,6 +1,6 @@
 # memory.md — matchavez/nzihl-broadcast-assets
 
-Self-context for Claude. Not written for humans — README.md is the human-facing doc, keep both in sync (see sync note at bottom). Last refreshed: 2026-07-11.
+Self-context for Claude. Not written for humans — README.md is the human-facing doc, keep both in sync (see sync note at bottom). Last refreshed: 2026-08-24.
 
 ## What this repo is
 Central asset + graphics repo for NZIHL/NZWIHL broadcasts. Two jobs live here:
@@ -11,7 +11,8 @@ GitHub Pages is enabled on this repo (root). Any `.html` at repo root or in a su
 
 ## Directory map
 - `build_standings.py`, `requirements.txt` — the standings renderer (Pillow/requests/BeautifulSoup). Outputs `NZIHL_Standings.png` / `NZWIHL_Standings.png` (1920×1080 transparent, 60px margin) AND `<LEAGUE>_Standings_1840x1000.png` (opaque flat variant, added 2026-06-29). Workflow stages-then-diffs so new output files actually get committed (not just modified ones).
-- `.github/workflows/update-standings.yml` — cron `0 14 * * *` (UTC) = 02:00 NZST nightly. Also `workflow_dispatch` for manual runs. Falls back to a static snapshot embedded in the script if a live scrape fails, so downstream consumers never see a missing/stale image.
+- `.github/workflows/update-standings.yml` — ran nightly, cron `0 14 * * *` (UTC) = 02:00 NZST. **Paused for the 2026 off-season as of 2026-08-24** (schedule commented out, `workflow_dispatch` still works). Was already failing every scheduled run since 2026-08-14 with "No standings table found" before the pause — `use_fallback=False` was set at the time, so it errored loud rather than silently rendering a stale/garbage image; not fixed, just silenced. Root cause not investigated as part of this pause.
+- `.github/workflows/regenerate-pronunciation-guide.yml` — `workflow_dispatch` only, not on a schedule. Triggered by the "Regenerate PDFs" button on `matchavez.com/hockey/ops/pronunciation-review/` (a Cloudflare Worker route holds the token and dispatches this workflow server-side) or manually from the Actions tab. Rebuilds all 10 team pronunciation-guide PDFs + the combined booklet from live stats/photo/season data, commits, and forces a Pages rebuild.
 - `assets/fonts/`, `assets/league/`, `assets/logos/` — TeX Gyre Heros font files, league logos, team logos (both leagues). Source of truth for team logo filenames — **Dunedin_Thunder.png** is current, "Phoenix Thunder" filename is deprecated/do not use.
 - `2026-nzihl-nzwihl-style-guide.html` / `.pdf`, `2026-nzihl-nzwihl-hex-cheat-sheet.html` — brand reference docs, year-prefixed filenames on purpose (rebuild new ones each season rather than overwrite). Style guide logos are base64-embedded. PDF built via weasyprint.
 - `up-next/` — per-club "UP NEXT" animated overlay source + renderer (`up-next/renderer/`) + one-click zips (`up-next/zips/`, named `<slug>_upnext.zip`, slug = full team name lowercased, spaces→underscore). `up-next/README.md` has renderer usage notes.
@@ -35,7 +36,9 @@ GitHub Pages is enabled on this repo (root). Any `.html` at repo root or in a su
 ## Automation summary
 | Workflow | Cron (UTC) | Purpose |
 |---|---|---|
-| update-standings.yml | `0 14 * * *` | rebuild + commit both leagues' standings PNGs (both size variants) |
+| update-standings.yml | `0 14 * * *` — **paused 2026-08-24, off-season** | rebuild + commit both leagues' standings PNGs (both size variants). Was already erroring nightly since 2026-08-14 before the pause, see Directory map above |
+| regenerate-pronunciation-guide.yml | none — `workflow_dispatch` only | rebuild all 10 team pronunciation-guide PDFs + combined booklet, triggered from the ops review page or manually |
+| force-pages-build.yml | none — runs on push to main | forces a Pages rebuild since the legacy Pages builder doesn't always auto-build |
 
 ## Related repos
 - **matchavez/hockey** — portal + all *deployed* overlay pages; consumes this repo's PNGs via raw.githubusercontent.com, and its `summary/`/`scoringleaders/` design work often prototypes here first.
