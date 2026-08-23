@@ -4,9 +4,16 @@ name: Update Standings Graphics
 # hockey season). NZ shifts to NZDT (UTC+13) from late September to early
 # April, so during the off-season this fires at 03:00 local — fine, since
 # no games are being played then.
+#
+# PAUSED for 2026 off-season — 2026-08-24. Season's over (NZIHL Grand Final
+# decided 23 Aug) and the live scrape has been failing every run since
+# 2026-08-14 anyway ("No standings table found") — not worth erroring on a
+# schedule for the rest of the year. Not fixed, just silenced; the
+# underlying scrape issue is still open. Re-enable the schedule block below
+# ahead of next season (and re-check whether the scrape issue cleared).
 on:
-  schedule:
-    - cron: "0 14 * * *"
+  # schedule:
+  #   - cron: "0 14 * * *"
   workflow_dispatch:        # allow manual runs from the Actions tab
 
 permissions:
